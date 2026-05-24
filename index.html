@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电商产品主页 UI 优化工作台</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div>
+          <strong>ProductFrame AI</strong>
+          <span>电商视觉生成工作台</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="workspace">
+          <span>工作台</span>
+        </button>
+        <button class="nav-item" data-view="prompts">
+          <span>提示词库</span>
+        </button>
+        <button class="nav-item" data-view="models">
+          <span>模型接入</span>
+        </button>
+      </nav>
+
+      <section class="model-card">
+        <div class="label">当前生成模型</div>
+        <select id="modelSelect">
+          <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image · Nano Banana</option>
+          <option value="gemini-3-pro-image-preview">Gemini 3 Pro Image · Nano Banana Pro</option>
+          <option value="gpt-image-2">OpenAI GPT Image 2</option>
+          <option value="seedream-4">Seedream 4</option>
+        </select>
+        <p id="modelHint">快速生成主图、场景图、轻量详情图，适合 MVP 阶段批量出稿。</p>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">AI Commerce Creative Studio</p>
+          <h1>电商产品主页 UI 优化</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost" id="resetBtn">重置</button>
+          <button class="primary" id="generateBtn">生成视觉方案</button>
+        </div>
+      </header>
+
+      <section class="view active" id="workspaceView">
+        <div class="workspace-grid">
+          <section class="panel input-panel">
+            <div class="panel-heading">
+              <h2>商品信息</h2>
+              <span>输入越具体，图像越稳定</span>
+            </div>
+
+            <label>
+              商品名称
+              <input id="productName" value="便携式筋膜按摩仪" placeholder="例如：智能恒温咖啡杯">
+            </label>
+
+            <label>
+              核心卖点
+              <textarea id="sellingPoints" rows="4">深层放松肌肉，低噪电机，Type-C 快充，6 档力度调节，适合办公室和运动后恢复。</textarea>
+            </label>
+
+            <div class="form-row">
+              <label>
+                目标平台
+                <select id="platform">
+                  <option>天猫 / 淘宝</option>
+                  <option>京东</option>
+                  <option>拼多多</option>
+                  <option>Amazon</option>
+                  <option>小红书店铺</option>
+                  <option>抖音商城</option>
+                  <option>小红书商城</option>
+                </select>
+              </label>
+              <label>
+                价格带
+                <select id="priceTier">
+                  <option>中端实用型</option>
+                  <option>高端质感型</option>
+                  <option>低价走量型</option>
+                  <option>礼品套装型</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              目标人群
+              <input id="audience" value="久坐办公人群、健身爱好者、送礼用户" placeholder="例如：宝妈、露营玩家、白领">
+            </label>
+
+            <label>
+              视觉风格
+              <select id="visualStyle">
+                <option>清爽科技感</option>
+                <option>高端黑金质感</option>
+                <option>自然生活方式</option>
+                <option>日系极简</option>
+                <option>强促销转化</option>
+              </select>
+            </label>
+
+            <div class="brand-kit">
+              <div class="panel-heading compact">
+                <h2>品牌资产</h2>
+                <span>用于稳定视觉调性</span>
+              </div>
+              <label>
+                品牌名
+                <input id="brandName" value="PulseEase" placeholder="例如：MellowCup">
+              </label>
+              <div class="form-row">
+                <label>
+                  品牌主色
+                  <input id="brandColor" type="color" value="#1f6f5b">
+                </label>
+                <label>
+                  品牌调性
+                  <select id="brandTone">
+                    <option>专业可信</option>
+                    <option>年轻活力</option>
+                    <option>高端克制</option>
+                    <option>温暖生活感</option>
+                    <option>强促销效率</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                品牌 Logo PNG
+                <input id="brandLogo" type="file" accept="image/png">
+              </label>
+              <div class="logo-preview empty" id="logoPreview">
+                <span>暂无品牌 Logo</span>
+              </div>
+              <label>
+                主色调参考图
+                <input id="paletteReference" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg">
+              </label>
+              <div class="palette-preview empty" id="palettePreview">
+                <span>上传图片后自动提取参考主色</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>
+                生成尺寸
+                <select id="imageSize">
+                  <option value="1:1">1:1 商品主图</option>
+                  <option value="4:5">4:5 竖版主图</option>
+                  <option value="3:4">3:4 小红书图</option>
+                  <option value="750:1800">750:1800 详情长图</option>
+                </select>
+              </label>
+              <label>
+                生成数量
+                <input id="imageCount" type="number" min="1" max="6" value="2">
+              </label>
+            </div>
+
+            <label>
+              品牌禁忌词 / 画面限制
+              <textarea id="negativePrompt" rows="3" placeholder="例如：不要夸张变形，不要错误 Logo，不要医学功效承诺">不要夸张变形，不要错误品牌 Logo，不要医学功效承诺，不要杂乱背景。</textarea>
+            </label>
+
+            <label>
+              参考图上传
+              <input id="referenceImage" type="file" accept="image/*">
+            </label>
+
+            <div class="reference-preview empty" id="referencePreview">
+              <span>暂无参考图</span>
+            </div>
+
+            <section class="client-brief">
+              <div class="panel-heading compact">
+                <h2>客户要求文档</h2>
+                <button class="ghost small" id="clearBriefBtn">清除</button>
+              </div>
+              <label>
+                上传要求文档
+                <input id="briefDocument" type="file" accept=".txt,.md,.json,.csv,.png,.jpg,.jpeg,.pdf,.docx,text/plain,text/markdown,application/json,text/csv,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+              </label>
+              <div class="brief-preview empty" id="briefPreview">
+                <span>支持 txt / md / json / csv / png / jpg / pdf / docx。文本会自动读取，图片可预览，PDF/DOCX 会进入解析队列。</span>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="panel-heading">
+              <h2>生成结果</h2>
+              <span id="statusText">等待生成</span>
+            </div>
+
+            <div class="tabs">
+              <button class="tab active" data-tab="hero">商品主图</button>
+              <button class="tab" data-tab="detail">详情长图</button>
+              <button class="tab" data-tab="copy">页面文案</button>
+            </div>
+
+            <section class="quality-panel">
+              <div class="quality-score">
+                <strong id="qualityScore">0</strong>
+                <span>输入质量评分</span>
+              </div>
+              <div>
+                <h3 id="qualityTitle">等待质检</h3>
+                <ul id="qualityList"></ul>
+              </div>
+            </section>
+
+            <section class="compliance-panel">
+              <div class="panel-heading compact">
+                <h2>平台规范检查</h2>
+                <span id="complianceStatus">待检查</span>
+              </div>
+              <div class="compliance-grid" id="complianceGrid"></div>
+            </section>
+
+            <div class="preview-area">
+              <article class="creative-preview" id="heroPreview">
+                <div class="mock-image">
+                  <img id="referenceOverlay" alt="">
+                  <div class="product-orbit"></div>
+                  <div class="mock-product"></div>
+                  <div class="mock-badge">6档调节</div>
+                </div>
+                <div class="preview-copy">
+                  <span id="previewPlatform">天猫 / 淘宝</span>
+                  <h3 id="previewTitle">便携式筋膜按摩仪</h3>
+                  <p id="previewSubtitle">深层放松，低噪快充，运动后恢复更轻松。</p>
+                </div>
+              </article>
+
+              <article class="detail-preview hidden" id="detailPreview">
+                <div class="detail-block">痛点场景：久坐酸胀 / 运动紧绷</div>
+                <div class="detail-block">核心卖点：低噪电机 + 6 档力度</div>
+                <div class="detail-block">信任背书：快充续航 / 便携收纳</div>
+                <div class="detail-block">转化收口：自用送礼都合适</div>
+              </article>
+
+              <article class="copy-preview hidden" id="copyPreview">
+                <h3>首屏标题</h3>
+                <p id="headlineCopy">一按放松，给身体一个随身恢复舱</p>
+                <h3>详情页结构</h3>
+                <ol id="copyList"></ol>
+              </article>
+            </div>
+
+            <div class="prompt-box">
+              <div>
+                <strong>图像生成提示词</strong>
+                <span id="promptMeta">主图 · 1:1</span>
+              </div>
+              <textarea id="promptOutput" rows="7" readonly></textarea>
+              <div class="prompt-actions">
+                <button class="ghost" id="copyPromptBtn">复制提示词</button>
+                <button class="primary" id="submitImageBtn">提交生成任务</button>
+              </div>
+            </div>
+
+            <section class="gallery-section">
+              <div class="panel-heading compact">
+                <h2>生成图库</h2>
+                <div class="gallery-head-actions">
+                  <button class="ghost small" id="exportTxtBtn">导出方案</button>
+                  <button class="ghost small" id="exportJsonBtn">导出 JSON</button>
+                  <span id="galleryStatus">暂无任务</span>
+                </div>
+              </div>
+              <div class="job-summary" id="jobSummary">提交生成任务后会在这里显示模型、尺寸、数量和参考图状态。</div>
+              <div class="self-check" id="selfCheck">
+                <strong>生成后自检</strong>
+                <span>生成方案后会自动检查错别字、违规词、平台规范和客户要求匹配度。</span>
+              </div>
+              <div class="gallery-grid" id="galleryGrid"></div>
+            </section>
+
+            <section class="history-section">
+              <div class="panel-heading compact">
+                <h2>任务历史</h2>
+                <button class="ghost small" id="clearHistoryBtn">清空历史</button>
+              </div>
+              <div class="history-list" id="historyList"></div>
+            </section>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="promptsView">
+        <div class="library-grid" id="promptLibrary"></div>
+      </section>
+
+      <section class="view" id="modelsView">
+        <div class="panel model-config">
+          <div class="panel-heading">
+            <h2>模型接入规划</h2>
+            <span>真实 API 建议统一走服务端代理</span>
+          </div>
+          <div class="model-list" id="modelList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
