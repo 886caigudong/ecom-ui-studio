@@ -950,6 +950,15 @@ async function downloadPreviewPng(job, imageId) {
   }
 }
 
+async function downloadPngFile(job, image) {
+  const dataUrl = createPreviewSvg(job, image, { highResolution: true });
+  const output = await svgToPng(dataUrl, image.ratio);
+  const filename = `${job.productName}-${image.id}-高清-${output.width}x${output.height}.png`;
+  triggerDownload(output.url, filename);
+  URL.revokeObjectURL(output.url);
+  return { filename, width: output.width, height: output.height };
+}
+
 function svgToPng(svgUrl, ratio) {
   const size = getImageDimensions(ratio, true);
 
@@ -1053,14 +1062,46 @@ function exportCurrentPlanJson() {
   statusText.textContent = "任务 JSON 已导出";
 }
 
+async function exportDeliveryPackage() {
+  if (!currentJob) {
+    statusText.textContent = "请先提交生成任务再批量下载交付包";
+    return;
+  }
+
+  statusText.textContent = "正在批量生成高清交付文件";
+  const downloaded = [];
+
+  try {
+    for (const image of currentJob.images) {
+      downloaded.push(await downloadPngFile(currentJob, image));
+      await wait(180);
+    }
+
+    exportCurrentPlanTxt();
+    await wait(180);
+    exportCurrentPlanJson();
+    statusText.textContent = `交付包已触发下载：${downloaded.length} 张高清 PNG + 方案 TXT + JSON`;
+  } catch (error) {
+    statusText.textContent = `批量下载失败：${error.message}`;
+  }
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function downloadTextFile(filename, content, type = "text/plain;charset=utf-8") {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
+  triggerDownload(url, filename);
+  URL.revokeObjectURL(url);
+}
+
+function triggerDownload(url, filename) {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(url);
 }
 
 function handleReferenceUpload(event) {
@@ -1657,6 +1698,7 @@ document.querySelector("#copyPromptBtn").addEventListener("click", async () => {
 document.querySelector("#submitImageBtn").addEventListener("click", submitImageJob);
 document.querySelector("#exportTxtBtn").addEventListener("click", exportCurrentPlanTxt);
 document.querySelector("#exportJsonBtn").addEventListener("click", exportCurrentPlanJson);
+document.querySelector("#exportDeliveryBtn").addEventListener("click", exportDeliveryPackage);
 document.querySelector("#clearHistoryBtn").addEventListener("click", () => {
   localStorage.removeItem(historyKey);
   renderHistory();

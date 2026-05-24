@@ -90,6 +90,10 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
 - Export:
   - TXT delivery plan.
   - JSON task data.
+  - Batch delivery download:
+    - Downloads all high-resolution PNG outputs.
+    - Downloads the TXT delivery plan.
+    - Downloads the JSON task payload.
 - Cost and usage planning:
   - `POST /api/usage/estimate` estimates credits and approximate API cost by model, size, count, mode, and reference assets.
   - The workspace shows a live cost panel.
@@ -298,6 +302,10 @@ Continuation:
     - Gallery cards display `交付规格`, export pixels, aspect ratio, and platform fit.
     - If a user downloads a size that does not fit the target platform, the app asks for confirmation first.
     - Verified gallery rendering shows `2000x2000 · 1:1 · 平台适配`.
+  - Added batch delivery download:
+    - New `批量下载交付包` button in the gallery header.
+    - Triggers all high-resolution PNG downloads plus TXT and JSON exports.
+    - Implemented without third-party zip dependencies for the current static MVP.
   - Upgraded UI color system using the user's reference color card:
     - Deep black page background.
     - Gucci green `#1F4433` as primary brand color.
