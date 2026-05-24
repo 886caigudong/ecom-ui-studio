@@ -271,6 +271,38 @@ select:focus {
   gap: 12px;
 }
 
+.detail-planner {
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.module-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.module-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8faf4;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.module-list input {
+  width: auto;
+}
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -1029,6 +1061,10 @@ select:focus {
   }
 
   .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .module-list {
     grid-template-columns: 1fr;
   }
 

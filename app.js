@@ -76,6 +76,7 @@ const fields = {
   imageSize: document.querySelector("#imageSize"),
   imageCount: document.querySelector("#imageCount"),
   negativePrompt: document.querySelector("#negativePrompt"),
+  detailNotes: document.querySelector("#detailNotes"),
   referenceImage: document.querySelector("#referenceImage"),
   briefDocument: document.querySelector("#briefDocument"),
   modelSelect: document.querySelector("#modelSelect")
@@ -125,6 +126,8 @@ function collectInput() {
     imageSize: fields.imageSize.value,
     imageCount: clamp(Number(fields.imageCount.value || 2), 1, 6),
     negativePrompt: fields.negativePrompt.value.trim(),
+    detailModules: getSelectedDetailModules(),
+    detailNotes: fields.detailNotes.value.trim(),
     hasReferenceImage: Boolean(referenceAsset),
     hasClientBrief: Boolean(clientBrief),
     clientBriefName: clientBrief?.name || "",
@@ -139,6 +142,10 @@ function collectInput() {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function getSelectedDetailModules() {
+  return Array.from(document.querySelectorAll(".detail-module:checked")).map((item) => item.value);
 }
 
 function buildHeroPrompt(data) {
@@ -169,7 +176,8 @@ function buildDetailPrompt(data) {
     `客户要求文档：${data.hasClientBrief ? data.clientBriefText : "未上传，以当前表单信息为准"}。`,
     `卖点：${data.sellingPoints}。`,
     `画面限制：${data.negativePrompt || "避免虚假承诺和错误品牌标识"}。`,
-    "生成 5 个详情页模块：痛点共鸣、核心卖点、使用场景、参数信任、转化收口。",
+    `详情页模块顺序：${data.detailModules.join(" -> ")}。`,
+    `详情页补充要求：${data.detailNotes || "无"}。`,
     "每个模块需要包含画面建议、主标题、辅助文案和适合图像生成的描述。"
   ].join("\n");
 }
@@ -191,8 +199,31 @@ function updatePreview() {
 
   const copyList = document.querySelector("#copyList");
   copyList.innerHTML = points.map((item) => `<li>${item}</li>`).join("");
+  renderDetailPreview(data);
   updateQualityPanel(data);
   updateCompliancePanel(data);
+}
+
+function renderDetailPreview(data = collectInput()) {
+  const modules = data.detailModules.length ? data.detailModules : ["首屏利益点", "痛点场景", "核心卖点拆解", "信任背书", "转化收口"];
+  document.querySelector("#detailPreview").innerHTML = modules.map((module, index) => {
+    const copy = detailModuleCopy(module, data);
+    return `<div class="detail-block">${index + 1}. ${module}：${copy}</div>`;
+  }).join("");
+}
+
+function detailModuleCopy(module, data) {
+  const map = {
+    "首屏利益点": `突出 ${data.productName} 的核心购买理由`,
+    "痛点场景": `面向 ${data.audience || "目标用户"} 呈现真实问题`,
+    "核心卖点拆解": summarize(data.sellingPoints),
+    "参数规格": "用参数、规格和使用方式建立信任",
+    "对比竞品": "用差异化对比突出本品优势",
+    "使用步骤": "展示使用流程，降低理解成本",
+    "信任背书": "补充材质、售后、口碑或认证信息",
+    "转化收口": data.detailNotes || "强化自用、送礼或限时购买理由"
+  };
+  return map[module] || "按客户要求生成对应详情模块";
 }
 
 function summarize(text) {
@@ -1202,6 +1233,10 @@ document.querySelector("#resetBtn").addEventListener("click", () => {
   fields.priceTier.value = "中端实用型";
   fields.audience.value = "久坐办公人群、健身爱好者、送礼用户";
   fields.visualStyle.value = "清爽科技感";
+  fields.detailNotes.value = "参数区强调续航和充电方式，最后一屏突出自用和送礼都合适。";
+  document.querySelectorAll(".detail-module").forEach((item) => {
+    item.checked = ["首屏利益点", "痛点场景", "核心卖点拆解", "参数规格", "信任背书", "转化收口"].includes(item.value);
+  });
   generatePlan();
 });
 
@@ -1237,6 +1272,9 @@ fields.brandLogo.addEventListener("change", handleLogoUpload);
 fields.paletteReference.addEventListener("change", handlePaletteUpload);
 fields.briefDocument.addEventListener("change", handleBriefUpload);
 document.querySelector("#clearBriefBtn").addEventListener("click", clearClientBrief);
+document.querySelectorAll(".detail-module").forEach((item) => {
+  item.addEventListener("change", generatePlan);
+});
 
 Object.values(fields).forEach((field) => {
   if (field instanceof HTMLElement && !["modelSelect", "referenceImage", "brandLogo", "paletteReference", "briefDocument"].includes(field.id)) {

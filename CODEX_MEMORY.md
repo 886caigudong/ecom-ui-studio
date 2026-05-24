@@ -132,3 +132,91 @@ git status --short --branch
 ```
 
 Assume the user wants to continue this exact product unless they explicitly change direction.
+
+## Work Log - 2026-05-24
+
+Conversation and environment:
+
+- User greeted Codex in Chinese and asked to check API connection status.
+- Checked local API environment variables and found OpenAI, DeepSeek, Anthropic-compatible, DashScope, Firecrawl, and OpenRouter keys in the current process environment.
+- API connectivity tests failed for OpenAI and DeepSeek by direct requests and via the local proxy port that was discovered.
+- Checked `cc switch` locally:
+  - Found running process `E:\CC SWITCH\cc-switch.exe`.
+  - Found local app data under `C:\Users\Admin（无密码）\AppData\Local\com.ccswitch.desktop`.
+  - Found no clear local HTTP gateway exposed by `cc switch`.
+  - Determined that `cc switch` was running but not clearly affecting the current terminal/API request chain.
+- Confirmed local code-writing capability by creating, reading, and deleting a temporary file.
+
+Planning and documentation:
+
+- Produced a full 0-to-1 AI app landing plan.
+- Converted the plan into a mind map.
+- Generated downloadable files:
+  - `D:\git\ai_app_mindmap.html`
+  - `D:\git\ai_app_mindmap.png`
+  - `D:\git\ai_app_mindmap.pdf`
+- Verified the PDF header as `%PDF-1.4`.
+
+Product development:
+
+- Started building the e-commerce product homepage UI optimization app.
+- Created `D:\git\ecom-ui-studio`.
+- Implemented a dependency-free MVP using:
+  - `index.html`
+  - `styles.css`
+  - `app.js`
+  - `server.js`
+- Started local app at `http://127.0.0.1:5173/`.
+- Fixed local server persistence issues by hosting the server through a persistent Node REPL process.
+- Added target platforms:
+  - Douyin Mall.
+  - Xiaohongshu Mall.
+- Added mock generation endpoint:
+  - `POST /api/images/generate`.
+- Added support for:
+  - Product information.
+  - Brand name/color/tone.
+  - Brand Logo PNG upload.
+  - Product reference image upload.
+  - Main color reference image upload and dominant color extraction.
+  - Customer requirements document upload.
+  - Customer document formats: txt, md, json, csv, png, jpg, jpeg, pdf, docx.
+  - Text brief reading.
+  - Image brief preview.
+  - PDF/DOCX deferred server-side parsing status.
+  - Prompt generation for main image, detail image, and page copy.
+  - Pre-generation input quality scoring.
+  - Platform compliance checks.
+  - Mock visual gallery.
+  - SVG preview and PNG download.
+  - Post-generation self-check for typos, risky terms, platform fit, and requirement fit.
+  - Single-image tuning, so one generated result can be adjusted without regenerating all images.
+  - Task history using browser localStorage.
+  - TXT and JSON export of the current generation plan.
+
+GitHub integration:
+
+- Initialized Git repository in `D:\git\ecom-ui-studio`.
+- Created `.gitignore`.
+- Created local commits:
+  - `a0f88c8 Initial e-commerce AI studio MVP`
+  - `6ecdb53 Ignore local SSH and logs`
+  - `865a74c Add Codex collaboration memory`
+- Generated a GitHub SSH key.
+- User added the SSH key to GitHub.
+- Verified SSH authentication with GitHub.
+- User created GitHub repository manually because `gh` token was expired.
+- Pushed repository to:
+  - `git@github.com:886caigudong/ecom-ui-studio.git`
+  - `https://github.com/886caigudong/ecom-ui-studio`
+
+User memory request:
+
+- User asked Codex to establish memory so future conversations do not restart from scratch.
+- Created this `CODEX_MEMORY.md` file.
+- Future Codex sessions should read this file before continuing work.
+
+Current continuation intent:
+
+- User asked to record today's conversation and work tasks, then continue completing the e-commerce product homepage UI app.
+- Next product step chosen: add a detail-page module planner/arranger so generated detail images can follow a structured e-commerce page flow.
