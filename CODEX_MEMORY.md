@@ -220,3 +220,7 @@ Current continuation intent:
 
 - User asked to record today's conversation and work tasks, then continue completing the e-commerce product homepage UI app.
 - Next product step chosen: add a detail-page module planner/arranger so generated detail images can follow a structured e-commerce page flow.
+- Continued product improvement:
+  - Added detail-page module planner so users can choose modules such as hero benefit, pain scene, selling point breakdown, parameters, comparison, usage steps, trust proof, and conversion close.
+  - Added product homepage hero layout planner so users can configure hero composition, selling point badges, CTA style, promotion area, trust proof, and price anchor.
+  - Main image prompt and homepage preview now respond to hero layout controls.

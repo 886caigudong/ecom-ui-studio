@@ -279,6 +279,37 @@ select:focus {
   background: #fff;
 }
 
+.hero-planner {
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.layout-toggles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.layout-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8faf4;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.layout-toggles input {
+  width: auto;
+}
+
 .module-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -435,6 +466,29 @@ select:focus {
   border-radius: 8px;
   border: 1px solid var(--line);
   background: #fff;
+}
+
+.creative-preview[data-composition="左文右图"] {
+  grid-template-columns: 1fr minmax(260px, 0.95fr);
+}
+
+.creative-preview[data-composition="左文右图"] .mock-image {
+  order: 2;
+}
+
+.creative-preview[data-composition="场景沉浸式"] {
+  grid-template-columns: 1fr;
+}
+
+.creative-preview[data-composition="场景沉浸式"] .preview-copy {
+  background: #fff;
+}
+
+.creative-preview[data-composition="多角度拼贴"] .mock-product {
+  box-shadow:
+    -88px 32px 0 -20px rgba(31, 111, 91, 0.28),
+    86px -28px 0 -22px rgba(69, 111, 145, 0.24),
+    0 28px 42px rgba(31, 47, 42, 0.24);
 }
 
 .mock-image {
@@ -692,6 +746,42 @@ select:focus {
   color: var(--muted);
   font-size: 18px;
   line-height: 1.65;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hero-badges span {
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #edf1e9;
+  color: var(--green-dark);
+  font-size: 12px;
+}
+
+.hero-commerce {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  align-items: center;
+}
+
+.commerce-pill {
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #14211f;
+  color: #fff;
+  font-size: 13px;
+}
+
+.commerce-note {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .detail-preview {
@@ -1065,6 +1155,10 @@ select:focus {
   }
 
   .module-list {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-toggles {
     grid-template-columns: 1fr;
   }
 

@@ -76,6 +76,12 @@ const fields = {
   imageSize: document.querySelector("#imageSize"),
   imageCount: document.querySelector("#imageCount"),
   negativePrompt: document.querySelector("#negativePrompt"),
+  heroComposition: document.querySelector("#heroComposition"),
+  ctaStyle: document.querySelector("#ctaStyle"),
+  heroBadges: document.querySelector("#heroBadges"),
+  showPromo: document.querySelector("#showPromo"),
+  showTrust: document.querySelector("#showTrust"),
+  showPrice: document.querySelector("#showPrice"),
   detailNotes: document.querySelector("#detailNotes"),
   referenceImage: document.querySelector("#referenceImage"),
   briefDocument: document.querySelector("#briefDocument"),
@@ -126,6 +132,12 @@ function collectInput() {
     imageSize: fields.imageSize.value,
     imageCount: clamp(Number(fields.imageCount.value || 2), 1, 6),
     negativePrompt: fields.negativePrompt.value.trim(),
+    heroComposition: fields.heroComposition.value,
+    ctaStyle: fields.ctaStyle.value,
+    heroBadges: splitBadges(fields.heroBadges.value),
+    showPromo: fields.showPromo.checked,
+    showTrust: fields.showTrust.checked,
+    showPrice: fields.showPrice.checked,
     detailModules: getSelectedDetailModules(),
     detailNotes: fields.detailNotes.value.trim(),
     hasReferenceImage: Boolean(referenceAsset),
@@ -148,6 +160,14 @@ function getSelectedDetailModules() {
   return Array.from(document.querySelectorAll(".detail-module:checked")).map((item) => item.value);
 }
 
+function splitBadges(value) {
+  return String(value || "")
+    .split(/[、,，/]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
 function buildHeroPrompt(data) {
   return [
     `为${data.platform}生成一张电商商品主图。`,
@@ -156,6 +176,7 @@ function buildHeroPrompt(data) {
     `目标人群：${data.audience}。`,
     `价格定位：${data.priceTier}。`,
     `视觉风格：${data.visualStyle}。`,
+    `主页首屏布局：${data.heroComposition}；卖点标签：${data.heroBadges.join("、") || "无"}；CTA：${data.ctaStyle}；促销区：${data.showPromo ? "显示" : "不显示"}；信任背书：${data.showTrust ? "显示" : "不显示"}；价格锚点：${data.showPrice ? "显示" : "不显示"}。`,
     `品牌资产：品牌名 ${data.brandName || "无"}，品牌主色 ${data.brandColor}，品牌调性 ${data.brandTone}，品牌Logo ${data.hasBrandLogo ? "已上传，保持清晰且不要重绘变形" : "未上传"}。`,
     `主色调参考：${data.hasPaletteReference ? `已上传 ${data.paletteReferenceName}，提取主色 ${data.paletteColor}，整体画面需贴近该色彩氛围` : "未上传，以品牌主色为准"}。`,
     `客户要求文档：${data.hasClientBrief ? data.clientBriefText : "未上传，以当前表单信息为准"}。`,
@@ -188,6 +209,7 @@ function updatePreview() {
   document.querySelector("#previewTitle").textContent = data.productName;
   document.querySelector("#previewSubtitle").textContent = summarize(data.sellingPoints);
   document.querySelector("#headlineCopy").textContent = `${data.productName}，让核心卖点一眼被看见`;
+  renderHeroLayoutPreview(data);
 
   const points = [
     `首屏：用${data.visualStyle}呈现产品质感和购买理由`,
@@ -229,6 +251,20 @@ function detailModuleCopy(module, data) {
 function summarize(text) {
   const clean = text.replace(/\s+/g, " ").replace(/[。；;]/g, "，");
   return clean.length > 34 ? `${clean.slice(0, 34)}...` : clean;
+}
+
+function renderHeroLayoutPreview(data) {
+  const badges = data.heroBadges.length ? data.heroBadges : ["核心卖点", "品质保障"];
+  document.querySelector("#previewBadges").innerHTML = badges.map((badge) => `<span>${badge}</span>`).join("");
+
+  const commerce = [];
+  if (data.showPromo) commerce.push(`<span class="commerce-pill">${data.ctaStyle}</span>`);
+  if (data.showPrice) commerce.push('<span class="commerce-note">价格锚点：突出到手价/券后价</span>');
+  if (data.showTrust) commerce.push('<span class="commerce-note">信任背书：售后保障 / 正品承诺</span>');
+  document.querySelector("#previewCommerce").innerHTML = commerce.join("");
+
+  const preview = document.querySelector("#heroPreview");
+  preview.dataset.composition = data.heroComposition;
 }
 
 function auditInput(data) {
@@ -672,6 +708,12 @@ function loadHistoryItem(id) {
   fields.priceTier.value = input.priceTier || "中端实用型";
   fields.audience.value = input.audience || "";
   fields.visualStyle.value = input.visualStyle || "清爽科技感";
+  fields.heroComposition.value = input.heroComposition || "居中大主体";
+  fields.ctaStyle.value = input.ctaStyle || "立即购买";
+  fields.heroBadges.value = (input.heroBadges || []).join("、") || "低噪快充、6档调节、便携收纳";
+  fields.showPromo.checked = input.showPromo !== false;
+  fields.showTrust.checked = input.showTrust !== false;
+  fields.showPrice.checked = Boolean(input.showPrice);
   fields.brandName.value = input.brandName || "";
   fields.brandColor.value = input.brandColor || "#1f6f5b";
   fields.brandTone.value = input.brandTone || "专业可信";
@@ -1233,6 +1275,12 @@ document.querySelector("#resetBtn").addEventListener("click", () => {
   fields.priceTier.value = "中端实用型";
   fields.audience.value = "久坐办公人群、健身爱好者、送礼用户";
   fields.visualStyle.value = "清爽科技感";
+  fields.heroComposition.value = "居中大主体";
+  fields.ctaStyle.value = "立即购买";
+  fields.heroBadges.value = "低噪快充、6档调节、便携收纳";
+  fields.showPromo.checked = true;
+  fields.showTrust.checked = true;
+  fields.showPrice.checked = false;
   fields.detailNotes.value = "参数区强调续航和充电方式，最后一屏突出自用和送礼都合适。";
   document.querySelectorAll(".detail-module").forEach((item) => {
     item.checked = ["首屏利益点", "痛点场景", "核心卖点拆解", "参数规格", "信任背书", "转化收口"].includes(item.value);
@@ -1274,6 +1322,9 @@ fields.briefDocument.addEventListener("change", handleBriefUpload);
 document.querySelector("#clearBriefBtn").addEventListener("click", clearClientBrief);
 document.querySelectorAll(".detail-module").forEach((item) => {
   item.addEventListener("change", generatePlan);
+});
+["showPromo", "showTrust", "showPrice"].forEach((id) => {
+  fields[id].addEventListener("change", generatePlan);
 });
 
 Object.values(fields).forEach((field) => {

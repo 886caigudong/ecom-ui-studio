@@ -173,6 +173,42 @@
               <textarea id="negativePrompt" rows="3" placeholder="例如：不要夸张变形，不要错误 Logo，不要医学功效承诺">不要夸张变形，不要错误品牌 Logo，不要医学功效承诺，不要杂乱背景。</textarea>
             </label>
 
+            <section class="hero-planner">
+              <div class="panel-heading compact">
+                <h2>主页首屏布局</h2>
+                <span>控制主图和首屏转化元素</span>
+              </div>
+              <div class="form-row">
+                <label>
+                  主图构图
+                  <select id="heroComposition">
+                    <option>居中大主体</option>
+                    <option>左文右图</option>
+                    <option>场景沉浸式</option>
+                    <option>多角度拼贴</option>
+                  </select>
+                </label>
+                <label>
+                  CTA 风格
+                  <select id="ctaStyle">
+                    <option>立即购买</option>
+                    <option>限时优惠</option>
+                    <option>领取优惠券</option>
+                    <option>加入购物车</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                卖点标签
+                <input id="heroBadges" value="低噪快充、6档调节、便携收纳" placeholder="用顿号分隔，例如：防水、快充、轻量">
+              </label>
+              <div class="layout-toggles">
+                <label><input id="showPromo" type="checkbox" checked> 显示促销区</label>
+                <label><input id="showTrust" type="checkbox" checked> 显示信任背书</label>
+                <label><input id="showPrice" type="checkbox"> 显示价格锚点</label>
+              </div>
+            </section>
+
             <section class="detail-planner">
               <div class="panel-heading compact">
                 <h2>详情页模块编排</h2>
@@ -261,6 +297,8 @@
                   <span id="previewPlatform">天猫 / 淘宝</span>
                   <h3 id="previewTitle">便携式筋膜按摩仪</h3>
                   <p id="previewSubtitle">深层放松，低噪快充，运动后恢复更轻松。</p>
+                  <div class="hero-badges" id="previewBadges"></div>
+                  <div class="hero-commerce" id="previewCommerce"></div>
                 </div>
               </article>
 
