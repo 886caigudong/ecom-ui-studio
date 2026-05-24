@@ -111,6 +111,8 @@ const usageCredits = document.querySelector("#usageCredits");
 const usageCost = document.querySelector("#usageCost");
 const usageMode = document.querySelector("#usageMode");
 const usageAssumptions = document.querySelector("#usageAssumptions");
+const assetLibraryGrid = document.querySelector("#assetLibraryGrid");
+const assetLibraryStatus = document.querySelector("#assetLibraryStatus");
 
 let referenceAsset = null;
 let brandLogoAsset = null;
@@ -1503,6 +1505,52 @@ async function renderProviderStatus() {
   }
 }
 
+function assetKindLabel(kind) {
+  const labels = {
+    "reference-image": "商品参考图",
+    "brand-logo": "品牌 Logo",
+    "palette-reference": "主色参考",
+    "client-brief-image": "图片要求",
+    "client-brief-text": "文本要求",
+    "client-brief-pdf": "PDF 要求",
+    "client-brief-docx": "DOCX 要求"
+  };
+  return labels[kind] || "素材";
+}
+
+async function renderAssetLibrary() {
+  if (!assetLibraryGrid || !assetLibraryStatus) return;
+  assetLibraryStatus.textContent = "正在读取本地素材库...";
+
+  try {
+    const response = await fetch("/api/assets");
+    if (!response.ok) throw new Error(`素材接口返回 ${response.status}`);
+    const data = await response.json();
+    const assets = Array.isArray(data.assets) ? data.assets : [];
+    assetLibraryStatus.textContent = assets.length ? `已入库 ${assets.length} 个素材` : "暂无素材，上传参考图、Logo、色卡或客户文档后会出现在这里。";
+
+    assetLibraryGrid.innerHTML = assets.map((asset) => {
+      const isImage = String(asset.type || "").startsWith("image/");
+      return `
+        <article class="asset-card">
+          <div class="asset-thumb ${isImage ? "" : "file"}">
+            ${isImage ? `<img src="${asset.url}" alt="${asset.name}">` : `<span>${assetKindLabel(asset.kind)}</span>`}
+          </div>
+          <div class="asset-card-body">
+            <strong>${escapeHtml(asset.name)}</strong>
+            <span>${assetKindLabel(asset.kind)} · ${formatFileSize(asset.size)}</span>
+            <code>${asset.url}</code>
+            <small>${formatTime(asset.createdAt)}</small>
+          </div>
+        </article>
+      `;
+    }).join("");
+  } catch (error) {
+    assetLibraryStatus.textContent = `素材库读取失败：${error.message}`;
+    assetLibraryGrid.innerHTML = "";
+  }
+}
+
 function switchView(view) {
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
@@ -1511,6 +1559,7 @@ function switchView(view) {
     section.classList.remove("active");
   });
   document.querySelector(`#${view}View`).classList.add("active");
+  if (view === "assets") renderAssetLibrary();
 }
 
 document.querySelector("#generateBtn").addEventListener("click", generatePlan);
@@ -1573,6 +1622,7 @@ fields.brandLogo.addEventListener("change", handleLogoUpload);
 fields.paletteReference.addEventListener("change", handlePaletteUpload);
 fields.briefDocument.addEventListener("change", handleBriefUpload);
 document.querySelector("#clearBriefBtn").addEventListener("click", clearClientBrief);
+document.querySelector("#refreshAssetsBtn")?.addEventListener("click", renderAssetLibrary);
 document.querySelectorAll(".detail-module").forEach((item) => {
   item.addEventListener("change", generatePlan);
 });
@@ -1604,6 +1654,7 @@ document.querySelectorAll('input[name="generationMode"], .detail-module').forEac
 renderLibrary();
 renderModels();
 renderProviderStatus();
+renderAssetLibrary();
 generatePlan();
 estimateUsageNow();
 loadServerHistory();

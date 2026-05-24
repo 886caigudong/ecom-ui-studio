@@ -24,6 +24,9 @@
         <button class="nav-item" data-view="prompts">
           <span>提示词库</span>
         </button>
+        <button class="nav-item" data-view="assets">
+          <span>素材库</span>
+        </button>
         <button class="nav-item" data-view="models">
           <span>模型接入</span>
         </button>
@@ -385,6 +388,20 @@
 
       <section class="view" id="promptsView">
         <div class="library-grid" id="promptLibrary"></div>
+      </section>
+
+      <section class="view" id="assetsView">
+        <div class="panel asset-library-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>素材库</h2>
+              <span>已上传的商品图、Logo、色卡参考和客户要求文档</span>
+            </div>
+            <button class="ghost small" id="refreshAssetsBtn">刷新素材</button>
+          </div>
+          <div class="asset-library-status" id="assetLibraryStatus">正在读取本地素材库...</div>
+          <div class="asset-library-grid" id="assetLibraryGrid"></div>
+        </div>
       </section>
 
       <section class="view" id="modelsView">

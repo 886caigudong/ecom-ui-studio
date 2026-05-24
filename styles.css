@@ -1,15 +1,19 @@
 :root {
-  --bg: #eef2ec;
-  --ink: #14211f;
-  --muted: #66746e;
-  --panel: #fbfbf7;
-  --line: #d6ddd2;
-  --green: #1f6f5b;
-  --green-dark: #16473c;
-  --lime: #c9df6a;
+  --bg: #050303;
+  --ink: #fffbf0;
+  --muted: #b9c0b5;
+  --panel: #fffbf0;
+  --panel-ink: #16261f;
+  --line: rgba(255, 251, 240, 0.16);
+  --green: #1f4433;
+  --green-dark: #10281e;
+  --orange: #ff8b31;
+  --ivory: #fffbf0;
+  --black: #050303;
+  --lime: #d8c86a;
   --blue: #456f91;
   --rose: #a14f55;
-  --shadow: 0 18px 45px rgba(30, 43, 39, 0.12);
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
 }
 
 * {
@@ -21,8 +25,9 @@ body {
   min-height: 100vh;
   color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(31, 111, 91, 0.12), transparent 36%),
-    linear-gradient(315deg, rgba(201, 223, 106, 0.16), transparent 38%),
+    radial-gradient(circle at 12% 8%, rgba(31, 68, 51, 0.72), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(255, 139, 49, 0.24), transparent 24%),
+    linear-gradient(140deg, rgba(31, 68, 51, 0.2), transparent 42%),
     var(--bg);
   font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
 }
@@ -46,7 +51,9 @@ button {
 
 .sidebar {
   padding: 24px;
-  background: rgba(251, 251, 247, 0.72);
+  background:
+    linear-gradient(180deg, rgba(31, 68, 51, 0.92), rgba(5, 3, 3, 0.82)),
+    var(--black);
   border-right: 1px solid var(--line);
   backdrop-filter: blur(18px);
 }
@@ -63,9 +70,9 @@ button {
   height: 44px;
   display: grid;
   place-items: center;
-  color: #fff;
-  background: var(--green-dark);
-  border-radius: 8px;
+  color: var(--ivory);
+  background: var(--orange);
+  border-radius: 16px 16px 16px 4px;
   font-weight: 800;
   font-size: 22px;
 }
@@ -77,7 +84,7 @@ button {
 
 .brand span {
   margin-top: 4px;
-  color: var(--muted);
+  color: rgba(255, 251, 240, 0.66);
   font-size: 13px;
 }
 
@@ -88,9 +95,9 @@ button {
 }
 
 .nav-item {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--muted);
+  border: 1px solid rgba(255, 251, 240, 0.12);
+  background: rgba(255, 251, 240, 0.04);
+  color: rgba(255, 251, 240, 0.72);
   text-align: left;
   padding: 12px 14px;
   border-radius: 8px;
@@ -98,32 +105,38 @@ button {
 
 .nav-item.active,
 .nav-item:hover {
-  color: var(--ink);
-  background: #fff;
-  border-color: var(--line);
+  color: var(--ivory);
+  background: rgba(255, 139, 49, 0.18);
+  border-color: rgba(255, 139, 49, 0.52);
 }
 
 .model-card,
 .panel {
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  color: var(--panel-ink);
+  border: 1px solid rgba(31, 68, 51, 0.18);
+  border-radius: 22px;
   box-shadow: var(--shadow);
 }
 
 .model-card {
   padding: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 139, 49, 0.22), transparent 34%),
+    rgba(16, 40, 30, 0.72);
+  border-color: rgba(255, 251, 240, 0.14);
+  color: var(--ivory);
 }
 
 .label {
-  color: var(--muted);
+  color: rgba(255, 251, 240, 0.68);
   font-size: 12px;
   margin-bottom: 8px;
 }
 
 .model-card p {
   margin: 12px 0 0;
-  color: var(--muted);
+  color: rgba(255, 251, 240, 0.64);
   font-size: 13px;
   line-height: 1.55;
 }
@@ -142,10 +155,10 @@ button {
   gap: 7px;
   margin: 0;
   padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
+  border: 1px solid rgba(255, 251, 240, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 251, 240, 0.08);
+  color: var(--ivory);
   font-size: 12px;
 }
 
@@ -168,7 +181,7 @@ button {
 
 .eyebrow {
   margin: 0 0 6px;
-  color: var(--green);
+  color: var(--orange);
   font-size: 13px;
   font-weight: 700;
 }
@@ -195,20 +208,21 @@ h1 {
 
 .primary,
 .ghost {
-  border-radius: 8px;
+  border-radius: 999px;
   border: 1px solid var(--line);
   padding: 11px 16px;
 }
 
 .primary {
-  border-color: var(--green-dark);
-  background: var(--green-dark);
-  color: #fff;
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #140b05;
+  font-weight: 800;
 }
 
 .ghost {
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--ink);
+  background: rgba(255, 251, 240, 0.08);
+  color: var(--ivory);
 }
 
 .view {
@@ -261,10 +275,10 @@ input,
 textarea,
 select {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
+  border: 1px solid rgba(31, 68, 51, 0.18);
+  border-radius: 14px;
+  background: #fffdf6;
+  color: var(--panel-ink);
   padding: 11px 12px;
   outline: none;
 }
@@ -286,8 +300,8 @@ textarea {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(31, 111, 91, 0.12);
+  border-color: var(--orange);
+  box-shadow: 0 0 0 4px rgba(255, 139, 49, 0.16);
 }
 
 .form-row {
@@ -299,17 +313,17 @@ select:focus {
 .detail-planner {
   margin: 18px 0;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(31, 68, 51, 0.18);
+  border-radius: 18px;
+  background: rgba(31, 68, 51, 0.06);
 }
 
 .hero-planner {
   margin: 18px 0;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(31, 68, 51, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 139, 49, 0.08);
 }
 
 .layout-toggles {
@@ -324,10 +338,10 @@ select:focus {
   gap: 8px;
   margin: 0;
   padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf4;
-  color: var(--ink);
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 14px;
+  background: var(--ivory);
+  color: var(--panel-ink);
   font-size: 13px;
 }
 
@@ -348,10 +362,10 @@ select:focus {
   gap: 8px;
   margin: 0;
   padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf4;
-  color: var(--ink);
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 14px;
+  background: var(--ivory);
+  color: var(--panel-ink);
   font-size: 13px;
 }
 
@@ -363,8 +377,8 @@ select:focus {
   display: flex;
   gap: 8px;
   padding: 5px;
-  background: #edf1e9;
-  border-radius: 8px;
+  background: rgba(31, 68, 51, 0.1);
+  border-radius: 999px;
   margin-bottom: 18px;
 }
 
@@ -378,9 +392,9 @@ select:focus {
 }
 
 .tab.active {
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 4px 14px rgba(30, 43, 39, 0.08);
+  background: var(--green);
+  color: var(--ivory);
+  box-shadow: 0 10px 24px rgba(31, 68, 51, 0.22);
 }
 
 .quality-panel {
@@ -390,30 +404,30 @@ select:focus {
   align-items: stretch;
   margin-bottom: 18px;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 18px;
+  background: #fffdf6;
 }
 
 .quality-score {
   display: grid;
   place-items: center;
   text-align: center;
-  border-radius: 8px;
-  background: #edf1e9;
+  border-radius: 18px;
+  background: var(--green);
   padding: 12px;
 }
 
 .quality-score strong {
   display: block;
-  color: var(--green-dark);
+  color: var(--ivory);
   font-size: 34px;
   line-height: 1;
 }
 
 .quality-score span {
   margin-top: 7px;
-  color: var(--muted);
+  color: rgba(255, 251, 240, 0.72);
   font-size: 12px;
 }
 
@@ -433,19 +447,19 @@ select:focus {
 .compliance-panel {
   margin-bottom: 18px;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 18px;
+  background: #fffdf6;
 }
 
 .usage-panel {
   margin-bottom: 18px;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 139, 49, 0.26);
+  border-radius: 18px;
   background:
-    radial-gradient(circle at top left, rgba(201, 223, 106, 0.28), transparent 34%),
-    #fff;
+    radial-gradient(circle at top left, rgba(255, 139, 49, 0.2), transparent 38%),
+    #fffdf6;
 }
 
 .usage-grid {
@@ -456,15 +470,15 @@ select:focus {
 
 .usage-grid article {
   padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf4;
+  border: 1px solid rgba(31, 68, 51, 0.14);
+  border-radius: 16px;
+  background: var(--ivory);
 }
 
 .usage-grid strong {
   display: block;
   margin-bottom: 5px;
-  color: var(--green-dark);
+  color: var(--green);
   font-size: 22px;
 }
 
@@ -487,9 +501,9 @@ select:focus {
 
 .compliance-item {
   padding: 11px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: #f8faf4;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 68, 51, 0.14);
+  background: var(--ivory);
 }
 
 .compliance-item strong {
@@ -529,9 +543,9 @@ select:focus {
   display: grid;
   grid-template-columns: minmax(260px, 0.95fr) 1fr;
   overflow: hidden;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: #fff;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 251, 240, 0.18);
+  background: var(--green);
 }
 
 .creative-preview[data-composition="左文右图"] {
@@ -561,9 +575,9 @@ select:focus {
   position: relative;
   min-height: 410px;
   background:
-    linear-gradient(145deg, rgba(31,111,91,0.18), transparent 48%),
-    linear-gradient(315deg, rgba(201,223,106,0.45), transparent 40%),
-    #f6f8f2;
+    radial-gradient(circle at 72% 18%, rgba(255, 139, 49, 0.36), transparent 24%),
+    linear-gradient(145deg, rgba(31,68,51,0.88), rgba(16,40,30,0.92)),
+    var(--green);
   overflow: hidden;
 }
 
@@ -587,7 +601,7 @@ select:focus {
   position: absolute;
   width: 300px;
   height: 300px;
-  border: 2px solid rgba(31,111,91,0.22);
+  border: 2px solid rgba(255, 251, 240, 0.24);
   border-radius: 50%;
   left: 50%;
   top: 50%;
@@ -623,9 +637,9 @@ select:focus {
   left: 24px;
   bottom: 24px;
   padding: 9px 12px;
-  border-radius: 8px;
-  background: #152b27;
-  color: #fff;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #130803;
   font-size: 13px;
 }
 
@@ -634,9 +648,9 @@ select:focus {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px dashed #bdc8b9;
-  border-radius: 8px;
-  background: #f6f8f2;
+  border: 1px dashed rgba(31, 68, 51, 0.36);
+  border-radius: 18px;
+  background: rgba(31, 68, 51, 0.06);
   color: var(--muted);
   font-size: 13px;
 }
@@ -654,18 +668,18 @@ select:focus {
 .client-brief {
   margin-top: 18px;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 18px;
+  background: #fffdf6;
 }
 
 .brief-preview {
   max-height: 220px;
   overflow: auto;
   padding: 12px;
-  border: 1px dashed #bdc8b9;
-  border-radius: 8px;
-  background: #f8faf4;
+  border: 1px dashed rgba(31, 68, 51, 0.28);
+  border-radius: 18px;
+  background: rgba(31, 68, 51, 0.05);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.65;
@@ -705,8 +719,8 @@ select:focus {
   margin-top: 8px;
   padding: 4px 7px;
   border-radius: 999px;
-  background: rgba(31, 111, 91, 0.1);
-  color: var(--green-dark);
+  background: rgba(255, 139, 49, 0.16);
+  color: var(--green);
   font-size: 11px;
   font-weight: 700;
 }
@@ -723,9 +737,9 @@ select:focus {
 .brand-kit {
   margin: 18px 0;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8faf4;
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 18px;
+  background: rgba(31, 68, 51, 0.06);
 }
 
 .logo-preview {
@@ -733,8 +747,8 @@ select:focus {
   display: grid;
   place-items: center;
   padding: 12px;
-  border: 1px dashed #bdc8b9;
-  border-radius: 8px;
+  border: 1px dashed rgba(31, 68, 51, 0.34);
+  border-radius: 18px;
   background:
     linear-gradient(45deg, #f1f4ee 25%, transparent 25%),
     linear-gradient(-45deg, #f1f4ee 25%, transparent 25%),
@@ -754,7 +768,7 @@ select:focus {
 }
 
 .logo-preview.empty {
-  background: #f6f8f2;
+  background: rgba(31, 68, 51, 0.06);
 }
 
 .palette-preview {
@@ -764,9 +778,9 @@ select:focus {
   gap: 12px;
   align-items: center;
   padding: 10px;
-  border: 1px dashed #bdc8b9;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px dashed rgba(31, 68, 51, 0.34);
+  border-radius: 18px;
+  background: #fffdf6;
   color: var(--muted);
   font-size: 13px;
 }
@@ -776,14 +790,14 @@ select:focus {
   grid-template-columns: 1fr;
   place-items: center;
   min-height: 82px;
-  background: #f6f8f2;
+  background: rgba(31, 68, 51, 0.06);
 }
 
 .palette-preview img {
   width: 112px;
   height: 92px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
 .palette-chip {
@@ -1245,6 +1259,83 @@ select:focus {
   font-size: 11px;
 }
 
+.asset-library-panel {
+  background:
+    radial-gradient(circle at top left, rgba(255, 139, 49, 0.16), transparent 32%),
+    var(--ivory);
+}
+
+.asset-library-status {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.asset-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.asset-card {
+  overflow: hidden;
+  border: 1px solid rgba(31, 68, 51, 0.16);
+  border-radius: 20px;
+  background: #fffdf6;
+  box-shadow: 0 14px 28px rgba(31, 68, 51, 0.08);
+}
+
+.asset-thumb {
+  height: 150px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 139, 49, 0.32), transparent 28%),
+    var(--green);
+  color: var(--ivory);
+  font-weight: 800;
+}
+
+.asset-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.asset-thumb.file span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 251, 240, 0.12);
+}
+
+.asset-card-body {
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+}
+
+.asset-card-body strong {
+  color: var(--panel-ink);
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.asset-card-body span,
+.asset-card-body small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.asset-card-body code {
+  overflow: hidden;
+  padding: 5px 7px;
+  border-radius: 8px;
+  background: rgba(31, 68, 51, 0.08);
+  color: var(--green);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 1080px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1264,6 +1355,7 @@ select:focus {
   .model-list,
   .gallery-grid,
   .usage-grid,
+  .asset-library-grid,
   .provider-status-grid {
     grid-template-columns: 1fr;
   }
@@ -1301,6 +1393,7 @@ select:focus {
   }
 
   .compliance-grid,
+  .asset-library-grid,
   .usage-grid {
     grid-template-columns: 1fr;
   }

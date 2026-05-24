@@ -36,6 +36,10 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
   - `GET /api/assets`
   - Static access via `/assets/{filename}`
   - Files are stored under ignored `data/assets/`.
+- UI visual direction:
+  - Uses a premium palette inspired by the user's uploaded color card.
+  - Core colors: Gucci green `#1F4433`, apricot orange `#FF8B31`, ivory white `#FFFBF0`, deep black `#050303`.
+  - The interface should preserve this premium dark-green/orange/ivory direction unless the user changes it.
 - Customer requirements document upload:
   - Text formats: txt, md, json, csv are read directly.
   - Image formats: png, jpg, jpeg are previewed and used as visual brief references.
@@ -272,3 +276,13 @@ Continuation:
     - Added static local asset serving through `/assets/{filename}`.
     - Product reference images, brand logos, palette references, and customer brief files now sync to the backend while preserving browser previews.
     - Verified asset save/list/static-read flow and browser startup.
+  - Upgraded UI color system using the user's reference color card:
+    - Deep black page background.
+    - Gucci green `#1F4433` as primary brand color.
+    - Apricot orange `#FF8B31` as CTA/accent color.
+    - Ivory white `#FFFBF0` as panel/background color.
+  - Added a frontend “素材库” view:
+    - Navigation item `素材库`.
+    - Reads backend assets from `GET /api/assets`.
+    - Displays uploaded images/files with type, size, local URL, and created time.
+    - Verified browser navigation to `assetsView`.
