@@ -1119,16 +1119,7 @@ function handleBriefUpload(event) {
   }
 
   if (isDeferredBrief) {
-    clientBrief = {
-      name: file.name,
-      type: file.type || extension,
-      size: file.size,
-      kind: extension,
-      text: `客户上传了 ${extension.toUpperCase()} 要求文档：${file.name}。当前前端已记录文件，正文需由服务端解析后注入生成提示词。`
-    };
-    renderBriefPreview(clientBrief);
-    generatePlan();
-    statusText.textContent = `${extension.toUpperCase()} 已记录，等待服务端解析正文`;
+    parseDeferredBrief(file, extension);
     return;
   }
 
@@ -1147,6 +1138,65 @@ function handleBriefUpload(event) {
     statusText.textContent = "客户要求已读取并写入提示词";
   };
   reader.readAsText(file, "utf-8");
+}
+
+function parseDeferredBrief(file, extension) {
+  statusText.textContent = `正在解析 ${extension.toUpperCase()} 要求文档`;
+  fileToBase64(file).then((base64) => {
+    return fetch("/api/documents/parse", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: file.name,
+        type: file.type || extension,
+        kind: extension,
+        size: file.size,
+        contentBase64: base64
+      })
+    });
+  }).then((response) => {
+    if (!response.ok) throw new Error(`解析接口返回 ${response.status}`);
+    return response.json();
+  }).then((result) => {
+    clientBrief = {
+      name: result.name,
+      type: file.type || extension,
+      size: result.size || file.size,
+      kind: result.kind || extension,
+      text: result.extractedText,
+      parseId: result.id,
+      parseSummary: result.summary,
+      checklist: result.checklist || []
+    };
+    renderBriefPreview(clientBrief);
+    generatePlan();
+    statusText.textContent = `${extension.toUpperCase()} 要求文档已解析并写入提示词`;
+  }).catch((error) => {
+    clientBrief = {
+      name: file.name,
+      type: file.type || extension,
+      size: file.size,
+      kind: extension,
+      text: `客户上传了 ${extension.toUpperCase()} 要求文档：${file.name}。解析失败：${error.message}。请人工补充关键要求。`
+    };
+    renderBriefPreview(clientBrief);
+    generatePlan();
+    statusText.textContent = "文档解析失败，已保留文件状态";
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function normalizeBriefText(text) {
@@ -1175,7 +1225,8 @@ function renderBriefPreview(brief) {
       <div class="brief-file-card">
         <strong>${brief.name} · ${formatFileSize(brief.size)}</strong>
         <code>${brief.kind.toUpperCase()}</code>
-        <span>${escapeHtml(brief.text)}</span>
+        <span>${escapeHtml(brief.parseSummary || brief.text)}</span>
+        ${brief.checklist?.length ? `<ul>${brief.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
       </div>
     `;
     return;

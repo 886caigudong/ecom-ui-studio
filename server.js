@@ -93,10 +93,43 @@ function createMockImageJob(input) {
   };
 }
 
+function createDocumentParseJob(input) {
+  const extension = String(input.kind || input.name?.split(".").pop() || "document").toLowerCase();
+  const sizeKb = Math.ceil(Number(input.size || 0) / 1024);
+  const name = input.name || `brief.${extension}`;
+
+  return {
+    id: `doc_${Date.now()}`,
+    status: "parsed",
+    name,
+    kind: extension,
+    size: input.size || 0,
+    summary: `${name} 已进入服务端解析流程。当前 MVP 已识别文件类型为 ${extension.toUpperCase()}，文件大小约 ${sizeKb} KB。`,
+    extractedText: [
+      `客户上传了 ${extension.toUpperCase()} 要求文档：${name}。`,
+      "请优先遵循文档中的版式要求、图片风格、主图/详情图结构、禁忌词和交付目标。",
+      "当前版本为无依赖解析占位，后续可接入 pdf-parse、mammoth 或 OCR 提取正文。"
+    ].join("\n"),
+    checklist: [
+      "确认主图构图是否符合客户要求",
+      "确认详情页模块顺序是否符合客户要求",
+      "确认品牌 Logo、主色调、参考图是否被纳入生成",
+      "确认平台规范和禁忌词是否冲突"
+    ]
+  };
+}
+
 http.createServer((req, res) => {
   if (req.method === "POST" && req.url.split("?")[0] === "/api/images/generate") {
     readJson(req)
       .then((input) => sendJson(res, 200, createMockImageJob(input)))
+      .catch((error) => sendJson(res, 400, { error: error.message }));
+    return;
+  }
+
+  if (req.method === "POST" && req.url.split("?")[0] === "/api/documents/parse") {
+    readJson(req)
+      .then((input) => sendJson(res, 200, createDocumentParseJob(input)))
       .catch((error) => sendJson(res, 400, { error: error.message }));
     return;
   }
