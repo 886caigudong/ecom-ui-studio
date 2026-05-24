@@ -119,6 +119,7 @@ let clientBrief = null;
 let currentJob = null;
 let currentUsageEstimate = null;
 let usageEstimateTimer = null;
+let serverHistory = null;
 const historyKey = "productframe-ai-history";
 
 function collectInput() {
@@ -695,11 +696,16 @@ function escapeXml(value) {
 }
 
 function getHistory() {
+  if (Array.isArray(serverHistory)) return serverHistory;
   try {
     return JSON.parse(localStorage.getItem(historyKey) || "[]");
   } catch {
     return [];
   }
+}
+
+function setLocalHistory(history) {
+  localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 20)));
 }
 
 function saveHistory(job, input) {
@@ -725,7 +731,51 @@ function saveHistory(job, input) {
     input,
     job
   };
-  localStorage.setItem(historyKey, JSON.stringify([item, ...history].slice(0, 20)));
+  const nextHistory = [item, ...history.filter((historyItem) => historyItem.id !== item.id)].slice(0, 20);
+  serverHistory = nextHistory;
+  setLocalHistory(nextHistory);
+  syncJobToServer(item);
+}
+
+async function loadServerHistory() {
+  try {
+    const response = await fetch("/api/jobs");
+    if (!response.ok) throw new Error(`历史接口返回 ${response.status}`);
+    const data = await response.json();
+    serverHistory = Array.isArray(data.jobs) ? data.jobs : [];
+    setLocalHistory(serverHistory);
+  } catch (error) {
+    serverHistory = null;
+    console.warn("Server history unavailable", error);
+  }
+  renderHistory();
+}
+
+async function syncJobToServer(item) {
+  try {
+    await fetch("/api/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(item)
+    });
+  } catch (error) {
+    console.warn("Job sync failed", error);
+  }
+}
+
+async function clearHistory() {
+  localStorage.removeItem(historyKey);
+  serverHistory = [];
+  renderHistory();
+  statusText.textContent = "历史任务已清空";
+
+  try {
+    await fetch("/api/jobs", { method: "DELETE" });
+  } catch (error) {
+    statusText.textContent = `本地历史已清空，服务端清空失败：${error.message}`;
+  }
 }
 
 function renderHistory() {
@@ -1509,4 +1559,4 @@ renderModels();
 renderProviderStatus();
 generatePlan();
 estimateUsageNow();
-renderHistory();
+loadServerHistory();

@@ -4,6 +4,8 @@ const path = require("path");
 
 const root = __dirname;
 const port = 5173;
+const dataDir = path.join(root, "data");
+const jobsFile = path.join(dataDir, "jobs.json");
 const types = {
   ".html": "text/html;charset=utf-8",
   ".css": "text/css;charset=utf-8",
@@ -36,6 +38,54 @@ function sendJson(res, status, payload) {
     "Content-Type": "application/json;charset=utf-8"
   });
   res.end(JSON.stringify(payload));
+}
+
+function ensureDataStore() {
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(jobsFile)) fs.writeFileSync(jobsFile, "[]", "utf8");
+}
+
+function readJobs() {
+  ensureDataStore();
+  try {
+    const jobs = JSON.parse(fs.readFileSync(jobsFile, "utf8"));
+    return Array.isArray(jobs) ? jobs : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeJobs(jobs) {
+  ensureDataStore();
+  fs.writeFileSync(jobsFile, JSON.stringify(jobs.slice(0, 100), null, 2), "utf8");
+}
+
+function sanitizeStoredJob(input) {
+  const job = input.job || {};
+  const formInput = input.input || {};
+  return {
+    id: job.id || input.id || `job_${Date.now()}`,
+    createdAt: job.createdAt || input.createdAt || new Date().toISOString(),
+    savedAt: new Date().toISOString(),
+    productName: job.productName || formInput.productName || "未命名商品",
+    platform: job.platform || formInput.platform || "通用电商平台",
+    model: job.model || formInput.model || "",
+    imageSize: job.imageSize || formInput.imageSize || "",
+    imageCount: job.imageCount || formInput.imageCount || 0,
+    brandName: formInput.brandName || job.brand?.name || "",
+    brandColor: formInput.brandColor || job.brand?.color || "",
+    brandTone: formInput.brandTone || job.brand?.tone || "",
+    usageEstimate: job.usageEstimate || input.usageEstimate || null,
+    input: formInput,
+    job
+  };
+}
+
+function saveJobRecord(input) {
+  const record = sanitizeStoredJob(input);
+  const existing = readJobs().filter((item) => item.id !== record.id);
+  writeJobs([record, ...existing]);
+  return record;
 }
 
 function createMockImageJob(input) {
@@ -277,6 +327,24 @@ function shiftHexColor(hex, amount) {
 const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url.split("?")[0] === "/api/providers/status") {
     sendJson(res, 200, getProviderStatus());
+    return;
+  }
+
+  if (req.method === "GET" && req.url.split("?")[0] === "/api/jobs") {
+    sendJson(res, 200, { jobs: readJobs().slice(0, 50) });
+    return;
+  }
+
+  if (req.method === "POST" && req.url.split("?")[0] === "/api/jobs") {
+    readJson(req)
+      .then((input) => sendJson(res, 200, saveJobRecord(input)))
+      .catch((error) => sendJson(res, 400, { error: error.message }));
+    return;
+  }
+
+  if (req.method === "DELETE" && req.url.split("?")[0] === "/api/jobs") {
+    writeJobs([]);
+    sendJson(res, 200, { ok: true });
     return;
   }
 

@@ -68,8 +68,10 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
   - Frontend tuning now calls server endpoint `POST /api/images/tune`.
   - The server returns a new version for only the selected image and leaves the rest of the gallery unchanged.
 - Task history:
-  - Stored in browser localStorage.
+  - Stored in browser localStorage with server-side JSON sync.
+  - Server persistence uses ignored local file `data/jobs.json`.
   - Supports preview, refill, and clearing history.
+  - API endpoints: `GET /api/jobs`, `POST /api/jobs`, `DELETE /api/jobs`.
 - Export:
   - TXT delivery plan.
   - JSON task data.
@@ -250,3 +252,12 @@ Current continuation intent:
     - Generation jobs now attach `usageEstimate`.
     - TXT/JSON exports include estimated credits and API cost.
     - Verified local endpoint and browser rendering.
+
+Continuation:
+
+- Added backend task persistence:
+  - New local JSON data store at `data/jobs.json`.
+  - Added `data/` to `.gitignore` so user/customer task data is not pushed.
+  - Added `GET /api/jobs`, `POST /api/jobs`, and `DELETE /api/jobs`.
+  - Frontend now syncs generated jobs to the server while preserving localStorage fallback.
+  - Verified API save/list/clear flow and browser history loading.
