@@ -324,3 +324,14 @@ Latest continuation:
   - Batch delivery now also downloads `�����嵥-manifest.json`.
   - Manifest records image filenames, export dimensions, aspect ratios, platform fit, recommended sizes, tuning instructions, usage estimate, self-check, and compliance checks.
   - Verified syntax and gallery UI entry.
+
+Latest continuation - ZIP delivery package:
+
+- Upgraded batch delivery to a real browser-generated ZIP package.
+- `批量下载交付包` now creates one `.zip` instead of triggering many separate downloads.
+- ZIP contents include high-resolution PNGs under `images/`, the TXT delivery plan, the full task JSON, and `交付清单-manifest.json`.
+- Implemented ZIP generation in the frontend without adding third-party dependencies.
+- Rewrote ZIP local header, central directory, and end-record creation with explicit field writes for easier maintenance.
+- Verified `app.js` and `server.js` syntax with `node --check`.
+- Verified the ZIP structure locally by generating a test package and extracting it with Windows `Expand-Archive`.
+- Confirmed the local app loads at `http://127.0.0.1:5173/` without browser console errors.

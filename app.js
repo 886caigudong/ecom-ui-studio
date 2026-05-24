@@ -123,6 +123,13 @@ let currentUsageEstimate = null;
 let usageEstimateTimer = null;
 let serverHistory = null;
 const historyKey = "productframe-ai-history";
+const crcTable = Array.from({ length: 256 }, (_, index) => {
+  let value = index;
+  for (let bit = 0; bit < 8; bit += 1) {
+    value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+  }
+  return value >>> 0;
+});
 
 function collectInput() {
   return {
@@ -959,6 +966,21 @@ async function downloadPngFile(job, image) {
   return { filename, width: output.width, height: output.height };
 }
 
+async function renderPngFile(job, image) {
+  const dataUrl = createPreviewSvg(job, image, { highResolution: true });
+  const output = await svgToPng(dataUrl, image.ratio);
+  const response = await fetch(output.url);
+  const blob = await response.blob();
+  URL.revokeObjectURL(output.url);
+
+  return {
+    filename: `${job.productName}-${image.id}-高清-${output.width}x${output.height}.png`,
+    width: output.width,
+    height: output.height,
+    blob
+  };
+}
+
 function svgToPng(svgUrl, ratio) {
   const size = getImageDimensions(ratio, true);
 
@@ -1062,6 +1084,61 @@ function exportCurrentPlanJson() {
   statusText.textContent = "任务 JSON 已导出";
 }
 
+function buildCurrentPlanText() {
+  const input = collectInput();
+  const compliance = auditPlatformCompliance(input);
+  const self = currentJob.selfCheck || runSelfCheck(currentJob, input);
+
+  return [
+    "电商产品主页 UI 优化方案",
+    "",
+    `任务ID：${currentJob.id}`,
+    `商品名称：${currentJob.productName}`,
+    `目标平台：${currentJob.platform}`,
+    `模型：${currentJob.model}`,
+    `尺寸：${currentJob.imageSize}`,
+    `数量：${currentJob.imageCount}`,
+    `预计点数：${currentJob.usageEstimate?.credits || currentUsageEstimate?.credits || "未估算"}`,
+    `预计 API 成本：${currentJob.usageEstimate?.isBillable ? `$${currentJob.usageEstimate.estimatedUsd}` : "$0.00"}`,
+    `品牌：${input.brandName || "未设置"}`,
+    `品牌主色：${input.brandColor}`,
+    `品牌调性：${input.brandTone}`,
+    "",
+    "核心卖点",
+    input.sellingPoints || "未填写",
+    "",
+    "图像生成提示词",
+    currentJob.prompt,
+    "",
+    "平台规范检查",
+    ...compliance.map((item) => `- [${item.level}] ${item.title}：${item.message}`),
+    "",
+    "生成后自检",
+    self.summary,
+    ...(self.issues.length ? self.issues.map((item) => `- [${item.level}] ${item.message}`) : ["- 未发现明显问题"]),
+    "",
+    "生成图片方案",
+    ...currentJob.images.flatMap((image, index) => [
+      `${index + 1}. ${image.title}`,
+      `   尺寸：${image.ratio}`,
+      `   说明：${image.description}`,
+      `   微调：${image.tuneInstruction || "无"}`
+    ])
+  ].join("\n");
+}
+
+function buildCurrentPlanPayload() {
+  const input = collectInput();
+
+  return {
+    input,
+    job: currentJob,
+    usageEstimate: currentJob.usageEstimate || currentUsageEstimate,
+    compliance: auditPlatformCompliance(input),
+    exportedAt: new Date().toISOString()
+  };
+}
+
 async function exportDeliveryPackage() {
   if (!currentJob) {
     statusText.textContent = "请先提交生成任务再批量下载交付包";
@@ -1085,6 +1162,35 @@ async function exportDeliveryPackage() {
     statusText.textContent = `交付包已触发下载：${downloaded.length} 张高清 PNG + 方案 TXT + JSON`;
   } catch (error) {
     statusText.textContent = `批量下载失败：${error.message}`;
+  }
+}
+
+async function exportDeliveryZipPackage() {
+  if (!currentJob) {
+    statusText.textContent = "请先提交生成任务再批量下载交付包";
+    return;
+  }
+
+  statusText.textContent = "正在生成 ZIP 交付包";
+  const renderedImages = [];
+
+  try {
+    for (const image of currentJob.images) {
+      renderedImages.push(await renderPngFile(currentJob, image));
+    }
+
+    const zipBlob = await createZip([
+      ...renderedImages.map((item) => ({ name: `images/${item.filename}`, data: item.blob })),
+      { name: `${currentJob.productName}-方案交付.txt`, data: buildCurrentPlanText() },
+      { name: `${currentJob.productName}-生成任务.json`, data: JSON.stringify(buildCurrentPlanPayload(), null, 2) },
+      { name: `${currentJob.productName}-交付清单-manifest.json`, data: JSON.stringify(buildDeliveryManifest(renderedImages), null, 2) }
+    ]);
+    const url = URL.createObjectURL(zipBlob);
+    triggerDownload(url, `${currentJob.productName}-交付包.zip`);
+    URL.revokeObjectURL(url);
+    statusText.textContent = `交付 ZIP 已生成：${renderedImages.length} 张高清 PNG + TXT + JSON + Manifest`;
+  } catch (error) {
+    statusText.textContent = `ZIP 交付包生成失败：${error.message}`;
   }
 }
 
@@ -1141,6 +1247,109 @@ function exportDeliveryManifest(downloaded = []) {
 
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function createZip(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  for (const file of files) {
+    const nameBytes = encoder.encode(file.name.replace(/\\/g, "/"));
+    const dataBytes = file.data instanceof Blob
+      ? new Uint8Array(await file.data.arrayBuffer())
+      : encoder.encode(String(file.data));
+    const crc = crc32(dataBytes);
+    const localHeader = createLocalZipHeader({
+      crc,
+      compressedSize: dataBytes.length,
+      uncompressedSize: dataBytes.length,
+      fileNameLength: nameBytes.length
+    });
+    localParts.push(localHeader, nameBytes, dataBytes);
+
+    const centralHeader = createCentralZipHeader({
+      crc,
+      compressedSize: dataBytes.length,
+      uncompressedSize: dataBytes.length,
+      fileNameLength: nameBytes.length,
+      localHeaderOffset: offset
+    });
+    centralParts.push(centralHeader, nameBytes);
+    offset += localHeader.length + nameBytes.length + dataBytes.length;
+  }
+
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+  const endRecord = createEndOfCentralDirectory({
+    fileCount: files.length,
+    centralDirectorySize: centralSize,
+    centralDirectoryOffset: offset
+  });
+
+  return new Blob([...localParts, ...centralParts, endRecord], { type: "application/zip" });
+}
+
+function createLocalZipHeader({ crc, compressedSize, uncompressedSize, fileNameLength }) {
+  const bytes = new Uint8Array(30);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 0, true);
+  view.setUint16(8, 0, true);
+  view.setUint16(10, 0, true);
+  view.setUint16(12, 0, true);
+  view.setUint32(14, crc, true);
+  view.setUint32(18, compressedSize, true);
+  view.setUint32(22, uncompressedSize, true);
+  view.setUint16(26, fileNameLength, true);
+  view.setUint16(28, 0, true);
+  return bytes;
+}
+
+function createCentralZipHeader({ crc, compressedSize, uncompressedSize, fileNameLength, localHeaderOffset }) {
+  const bytes = new Uint8Array(46);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x02014b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 20, true);
+  view.setUint16(8, 0, true);
+  view.setUint16(10, 0, true);
+  view.setUint16(12, 0, true);
+  view.setUint16(14, 0, true);
+  view.setUint32(16, crc, true);
+  view.setUint32(20, compressedSize, true);
+  view.setUint32(24, uncompressedSize, true);
+  view.setUint16(28, fileNameLength, true);
+  view.setUint16(30, 0, true);
+  view.setUint16(32, 0, true);
+  view.setUint16(34, 0, true);
+  view.setUint16(36, 0, true);
+  view.setUint32(38, 0, true);
+  view.setUint32(42, localHeaderOffset, true);
+  return bytes;
+}
+
+function createEndOfCentralDirectory({ fileCount, centralDirectorySize, centralDirectoryOffset }) {
+  const bytes = new Uint8Array(22);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x06054b50, true);
+  view.setUint16(4, 0, true);
+  view.setUint16(6, 0, true);
+  view.setUint16(8, fileCount, true);
+  view.setUint16(10, fileCount, true);
+  view.setUint32(12, centralDirectorySize, true);
+  view.setUint32(16, centralDirectoryOffset, true);
+  view.setUint16(20, 0, true);
+  return bytes;
+}
+
+function crc32(bytes) {
+  let crc = -1;
+  for (let index = 0; index < bytes.length; index += 1) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[index]) & 0xff];
+  }
+  return (crc ^ -1) >>> 0;
 }
 
 function downloadTextFile(filename, content, type = "text/plain;charset=utf-8") {
@@ -1751,7 +1960,7 @@ document.querySelector("#copyPromptBtn").addEventListener("click", async () => {
 document.querySelector("#submitImageBtn").addEventListener("click", submitImageJob);
 document.querySelector("#exportTxtBtn").addEventListener("click", exportCurrentPlanTxt);
 document.querySelector("#exportJsonBtn").addEventListener("click", exportCurrentPlanJson);
-document.querySelector("#exportDeliveryBtn").addEventListener("click", exportDeliveryPackage);
+document.querySelector("#exportDeliveryBtn").addEventListener("click", exportDeliveryZipPackage);
 document.querySelector("#clearHistoryBtn").addEventListener("click", () => {
   localStorage.removeItem(historyKey);
   renderHistory();
