@@ -34,6 +34,7 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
 - Uploaded assets are mirrored to the local backend asset store:
   - `POST /api/assets`
   - `GET /api/assets`
+  - `DELETE /api/assets/{assetId}`
   - Static access via `/assets/{filename}`
   - Files are stored under ignored `data/assets/`.
 - UI visual direction:
@@ -276,6 +277,10 @@ Continuation:
     - Added static local asset serving through `/assets/{filename}`.
     - Product reference images, brand logos, palette references, and customer brief files now sync to the backend while preserving browser previews.
     - Verified asset save/list/static-read flow and browser startup.
+  - Added asset deletion:
+    - New endpoint `DELETE /api/assets/{assetId}` removes both the stored file and asset index entry.
+    - Asset library cards now include a delete button with browser confirmation.
+    - Verified create/delete/list API flow and asset library rendering.
   - Upgraded UI color system using the user's reference color card:
     - Deep black page background.
     - Gucci green `#1F4433` as primary brand color.

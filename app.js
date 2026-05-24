@@ -1541,13 +1541,34 @@ async function renderAssetLibrary() {
             <span>${assetKindLabel(asset.kind)} · ${formatFileSize(asset.size)}</span>
             <code>${asset.url}</code>
             <small>${formatTime(asset.createdAt)}</small>
+            <button class="asset-delete" data-delete-asset="${asset.id}">删除素材</button>
           </div>
         </article>
       `;
     }).join("");
+    assetLibraryGrid.querySelectorAll("[data-delete-asset]").forEach((button) => {
+      button.addEventListener("click", () => deleteAsset(button.dataset.deleteAsset));
+    });
   } catch (error) {
     assetLibraryStatus.textContent = `素材库读取失败：${error.message}`;
     assetLibraryGrid.innerHTML = "";
+  }
+}
+
+async function deleteAsset(assetId) {
+  if (!assetId) return;
+  if (!window.confirm("确定删除这个素材吗？本地文件也会一起删除。")) return;
+  assetLibraryStatus.textContent = "正在删除素材...";
+
+  try {
+    const response = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: "DELETE"
+    });
+    if (!response.ok) throw new Error(`删除接口返回 ${response.status}`);
+    await renderAssetLibrary();
+    statusText.textContent = "素材已删除";
+  } catch (error) {
+    assetLibraryStatus.textContent = `素材删除失败：${error.message}`;
   }
 }
 

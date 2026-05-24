@@ -157,6 +157,27 @@ function saveAssetRecord(input) {
   return record;
 }
 
+function deleteAssetRecord(assetId) {
+  const assets = readAssets();
+  const target = assets.find((asset) => asset.id === assetId);
+  if (!target) {
+    const error = new Error("Asset not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const filename = path.basename(target.filename || "");
+  if (filename) {
+    const filePath = path.join(assetsDir, filename);
+    if (filePath.startsWith(assetsDir) && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  }
+
+  writeAssets(assets.filter((asset) => asset.id !== assetId));
+  return { ok: true, id: assetId };
+}
+
 function createMockImageJob(input) {
   const timestamp = new Date().toISOString();
   const prompt = String(input.prompt || "").slice(0, 1200);
@@ -426,6 +447,16 @@ const server = http.createServer((req, res) => {
     readJson(req)
       .then((input) => sendJson(res, 200, saveAssetRecord(input)))
       .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
+    return;
+  }
+
+  if (req.method === "DELETE" && req.url.startsWith("/api/assets/")) {
+    const assetId = decodeURIComponent(req.url.split("?")[0].replace("/api/assets/", ""));
+    try {
+      sendJson(res, 200, deleteAssetRecord(assetId));
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { error: error.message });
+    }
     return;
   }
 
