@@ -119,7 +119,58 @@ function createDocumentParseJob(input) {
   };
 }
 
+function getProviderStatus() {
+  const providers = [
+    {
+      id: "gemini-2.5-flash-image",
+      name: "Gemini 2.5 Flash Image / Nano Banana",
+      envKey: "GOOGLE_API_KEY",
+      baseUrlKey: "GOOGLE_BASE_URL",
+      use: "快速生成主图、场景图和轻量详情图。"
+    },
+    {
+      id: "gemini-3-pro-image-preview",
+      name: "Gemini 3 Pro Image / Nano Banana Pro",
+      envKey: "GOOGLE_API_KEY",
+      baseUrlKey: "GOOGLE_BASE_URL",
+      use: "复杂构图、文字渲染和高质量品牌资产。"
+    },
+    {
+      id: "gpt-image-2",
+      name: "OpenAI GPT Image 2",
+      envKey: "OPENAI_API_KEY",
+      baseUrlKey: "OPENAI_BASE_URL",
+      use: "高质量商品图、局部编辑和风格统一。"
+    },
+    {
+      id: "seedream-4",
+      name: "Seedream 4",
+      envKey: "SEEDREAM_API_KEY",
+      baseUrlKey: "SEEDREAM_BASE_URL",
+      use: "中文电商审美、海报图和多尺寸营销图。"
+    }
+  ];
+
+  return {
+    updatedAt: new Date().toISOString(),
+    providers: providers.map((provider) => ({
+      id: provider.id,
+      name: provider.name,
+      use: provider.use,
+      configured: Boolean(process.env[provider.envKey]),
+      hasBaseUrl: Boolean(process.env[provider.baseUrlKey]),
+      envKey: provider.envKey,
+      baseUrlKey: provider.baseUrlKey
+    }))
+  };
+}
+
 http.createServer((req, res) => {
+  if (req.method === "GET" && req.url.split("?")[0] === "/api/providers/status") {
+    sendJson(res, 200, getProviderStatus());
+    return;
+  }
+
   if (req.method === "POST" && req.url.split("?")[0] === "/api/images/generate") {
     readJson(req)
       .then((input) => sendJson(res, 200, createMockImageJob(input)))

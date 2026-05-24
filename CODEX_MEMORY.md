@@ -227,3 +227,5 @@ Current continuation intent:
   - Added `POST /api/documents/parse` as the first server-side document parsing endpoint.
   - PDF/DOCX customer requirement uploads now call the parsing endpoint and inject the returned `extractedText` into the prompt context.
   - Current parser is a no-dependency MVP placeholder; future work should replace it with real PDF/DOCX extraction using `pdf-parse`, `mammoth`, OCR, or a hosted document parser.
+  - Added `GET /api/providers/status` to centralize image model provider configuration status on the server.
+  - Added a model provider status panel in the Models view so frontend can show whether Gemini/Nano Banana, OpenAI image, and Seedream providers are configured without exposing secrets.

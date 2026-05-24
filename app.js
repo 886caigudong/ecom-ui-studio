@@ -1308,6 +1308,30 @@ function renderModels() {
   `).join("");
 }
 
+async function renderProviderStatus() {
+  const container = document.querySelector("#providerStatus");
+  try {
+    const response = await fetch("/api/providers/status");
+    if (!response.ok) throw new Error(`状态接口返回 ${response.status}`);
+    const data = await response.json();
+    container.innerHTML = `
+      <div class="provider-status-grid">
+        ${data.providers.map((provider) => `
+          <article class="provider-card ${provider.configured ? "configured" : "missing"}">
+            <h3>${provider.name}</h3>
+            <p>${provider.use}</p>
+            <p>${provider.configured ? "已检测到服务端 API Key" : "未检测到服务端 API Key"}</p>
+            <code>${provider.envKey}</code>
+            <code>${provider.baseUrlKey}</code>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  } catch (error) {
+    container.innerHTML = `<span>模型配置状态读取失败：${error.message}</span>`;
+  }
+}
+
 function switchView(view) {
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
@@ -1386,5 +1410,6 @@ Object.values(fields).forEach((field) => {
 
 renderLibrary();
 renderModels();
+renderProviderStatus();
 generatePlan();
 renderHistory();
