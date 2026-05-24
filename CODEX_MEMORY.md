@@ -73,6 +73,10 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
 - Export:
   - TXT delivery plan.
   - JSON task data.
+- Cost and usage planning:
+  - `POST /api/usage/estimate` estimates credits and approximate API cost by model, size, count, mode, and reference assets.
+  - The workspace shows a live cost panel.
+  - Generated jobs store `usageEstimate` and exports include usage information.
 
 ## Technical Decisions
 
@@ -240,3 +244,9 @@ Current continuation intent:
     - Frontend sends the selected image, tuning instruction, generation mode, and prompt context.
     - Server returns a versioned image result for that one image only.
     - Verified local API request and local page access at `http://127.0.0.1:5173/`.
+  - Added usage/cost estimation:
+    - New endpoint `POST /api/usage/estimate`.
+    - Added a live “生成成本预估” panel in the workspace.
+    - Generation jobs now attach `usageEstimate`.
+    - TXT/JSON exports include estimated credits and API cost.
+    - Verified local endpoint and browser rendering.

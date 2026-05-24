@@ -106,12 +106,19 @@ const palettePreview = document.querySelector("#palettePreview");
 const complianceGrid = document.querySelector("#complianceGrid");
 const complianceStatus = document.querySelector("#complianceStatus");
 const selfCheck = document.querySelector("#selfCheck");
+const usageStatus = document.querySelector("#usageStatus");
+const usageCredits = document.querySelector("#usageCredits");
+const usageCost = document.querySelector("#usageCost");
+const usageMode = document.querySelector("#usageMode");
+const usageAssumptions = document.querySelector("#usageAssumptions");
 
 let referenceAsset = null;
 let brandLogoAsset = null;
 let paletteAsset = null;
 let clientBrief = null;
 let currentJob = null;
+let currentUsageEstimate = null;
+let usageEstimateTimer = null;
 const historyKey = "productframe-ai-history";
 
 function collectInput() {
@@ -404,6 +411,55 @@ function updateCompliancePanel(data = collectInput()) {
   `).join("");
 }
 
+function usageInputFrom(data) {
+  return {
+    model: data.model,
+    imageSize: data.imageSize,
+    imageCount: data.imageCount,
+    generationMode: data.generationMode,
+    hasReferenceImage: data.hasReferenceImage,
+    hasBrandLogo: data.hasBrandLogo,
+    hasPaletteReference: data.hasPaletteReference,
+    hasClientBrief: data.hasClientBrief
+  };
+}
+
+function renderUsageEstimate(estimate) {
+  currentUsageEstimate = estimate;
+  usageStatus.textContent = estimate.isBillable ? "真实 API 预估" : "模拟模式预估";
+  usageCredits.textContent = `${estimate.credits}`;
+  usageCost.textContent = estimate.isBillable ? `$${estimate.estimatedUsd}` : "$0.00";
+  usageMode.textContent = estimate.generationMode === "real" ? "真实 API" : "模拟生成";
+  usageAssumptions.textContent = `${estimate.modelLabel} · ${estimate.imageCount} 张 · ${estimate.imageSize} · ${estimate.assumptions[0]}`;
+}
+
+function estimateUsageNow() {
+  const data = collectInput();
+  usageStatus.textContent = "估算中";
+
+  return fetch("/api/usage/estimate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(usageInputFrom(data))
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error(`成本估算接口返回 ${response.status}`);
+      return response.json();
+    })
+    .then(renderUsageEstimate)
+    .catch((error) => {
+      usageStatus.textContent = "估算失败";
+      usageAssumptions.textContent = error.message;
+    });
+}
+
+function scheduleUsageEstimate() {
+  window.clearTimeout(usageEstimateTimer);
+  usageEstimateTimer = window.setTimeout(estimateUsageNow, 180);
+}
+
 function generatePlan() {
   const data = collectInput();
   updatePreview();
@@ -448,6 +504,7 @@ async function submitImageJob() {
 
     const job = await response.json();
     currentJob = job;
+    if (job.usageEstimate) renderUsageEstimate(job.usageEstimate);
     job.selfCheck = runSelfCheck(job, data);
     renderGallery(job);
     saveHistory(job, data);
@@ -482,7 +539,8 @@ function renderGallery(job) {
     </article>
   `).join("");
 
-  jobSummary.textContent = `任务 ${job.id} · 模型 ${job.model} · 尺寸 ${job.imageSize} · 数量 ${job.imageCount} · 参考图 ${job.hasReferenceImage ? "已使用" : "未使用"}`;
+  const usageText = job.usageEstimate ? ` · 预计 ${job.usageEstimate.credits} 点 / ${job.usageEstimate.isBillable ? `$${job.usageEstimate.estimatedUsd}` : "$0.00"}` : "";
+  jobSummary.textContent = `任务 ${job.id} · 模型 ${job.model} · 尺寸 ${job.imageSize} · 数量 ${job.imageCount} · 参考图 ${job.hasReferenceImage ? "已使用" : "未使用"}${usageText}`;
   renderSelfCheck(job.selfCheck);
   galleryGrid.querySelectorAll("[data-download]").forEach((button) => {
     button.addEventListener("click", () => downloadImageBrief(job, button.dataset.download));
@@ -843,6 +901,8 @@ function exportCurrentPlanTxt() {
     `模型：${currentJob.model}`,
     `尺寸：${currentJob.imageSize}`,
     `数量：${currentJob.imageCount}`,
+    `预计点数：${currentJob.usageEstimate?.credits || currentUsageEstimate?.credits || "未估算"}`,
+    `预计 API 成本：${currentJob.usageEstimate?.isBillable ? `$${currentJob.usageEstimate.estimatedUsd}` : "$0.00"}`,
     `品牌：${input.brandName || "未设置"}`,
     `品牌主色：${input.brandColor}`,
     `品牌调性：${input.brandTone}`,
@@ -887,6 +947,7 @@ function exportCurrentPlanJson() {
   const payload = {
     input,
     job: currentJob,
+    usageEstimate: currentJob.usageEstimate || currentUsageEstimate,
     compliance: auditPlatformCompliance(input),
     exportedAt: new Date().toISOString()
   };
@@ -1428,8 +1489,24 @@ Object.values(fields).forEach((field) => {
   }
 });
 
+[
+  fields.modelSelect,
+  fields.imageSize,
+  fields.imageCount,
+  fields.referenceImage,
+  fields.brandLogo,
+  fields.paletteReference,
+  fields.briefDocument
+].forEach((field) => {
+  field.addEventListener("change", scheduleUsageEstimate);
+});
+document.querySelectorAll('input[name="generationMode"], .detail-module').forEach((input) => {
+  input.addEventListener("change", scheduleUsageEstimate);
+});
+
 renderLibrary();
 renderModels();
 renderProviderStatus();
 generatePlan();
+estimateUsageNow();
 renderHistory();

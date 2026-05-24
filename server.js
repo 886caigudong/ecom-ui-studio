@@ -181,6 +181,52 @@ function getProviderConfig(model) {
   };
 }
 
+function estimateUsage(input) {
+  const modelRates = {
+    "gemini-2.5-flash-image": { credits: 4, price: 0.04, label: "fast image draft" },
+    "gemini-3-pro-image-preview": { credits: 10, price: 0.12, label: "pro image composition" },
+    "gpt-image-2": { credits: 12, price: 0.16, label: "premium image generation" },
+    "seedream-4": { credits: 7, price: 0.08, label: "commerce poster generation" }
+  };
+  const sizeMultipliers = {
+    "1:1": 1,
+    "4:5": 1.15,
+    "3:4": 1.1,
+    "750:1800": 1.8
+  };
+  const model = input.model || "gemini-2.5-flash-image";
+  const imageCount = Math.min(Math.max(Number(input.imageCount || 1), 1), 6);
+  const imageSize = input.imageSize || "1:1";
+  const generationMode = input.generationMode || "mock";
+  const base = modelRates[model] || modelRates["gemini-2.5-flash-image"];
+  const multiplier = sizeMultipliers[imageSize] || 1;
+  const referenceSurcharge = [
+    input.hasReferenceImage,
+    input.hasBrandLogo,
+    input.hasPaletteReference,
+    input.hasClientBrief
+  ].filter(Boolean).length * 0.08;
+  const modeMultiplier = generationMode === "real" ? 1 : 0;
+  const credits = Math.ceil(base.credits * multiplier * imageCount * (1 + referenceSurcharge));
+  const estimatedUsd = Number((base.price * multiplier * imageCount * (1 + referenceSurcharge) * modeMultiplier).toFixed(2));
+
+  return {
+    model,
+    modelLabel: base.label,
+    imageCount,
+    imageSize,
+    generationMode,
+    credits,
+    estimatedUsd,
+    isBillable: generationMode === "real",
+    assumptions: [
+      "Mock mode records credits for planning but does not call a paid provider.",
+      "Real provider pricing is an estimate until exact vendor billing is connected.",
+      "Reference images, logo, palette, and client briefs add review/context overhead."
+    ]
+  };
+}
+
 function createRealModePlaceholder(input) {
   const config = getProviderConfig(input.model);
 
@@ -234,10 +280,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "POST" && req.url.split("?")[0] === "/api/usage/estimate") {
+    readJson(req)
+      .then((input) => sendJson(res, 200, estimateUsage(input)))
+      .catch((error) => sendJson(res, 400, { error: error.message }));
+    return;
+  }
+
   if (req.method === "POST" && req.url.split("?")[0] === "/api/images/generate") {
     readJson(req)
       .then((input) => {
         const job = input.generationMode === "real" ? createRealModePlaceholder(input) : createMockImageJob(input);
+        job.usageEstimate = estimateUsage(input);
         sendJson(res, 200, job);
       })
       .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
