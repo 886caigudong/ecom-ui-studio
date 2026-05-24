@@ -229,3 +229,7 @@ Current continuation intent:
   - Current parser is a no-dependency MVP placeholder; future work should replace it with real PDF/DOCX extraction using `pdf-parse`, `mammoth`, OCR, or a hosted document parser.
   - Added `GET /api/providers/status` to centralize image model provider configuration status on the server.
   - Added a model provider status panel in the Models view so frontend can show whether Gemini/Nano Banana, OpenAI image, and Seedream providers are configured without exposing secrets.
+  - Added generation mode switch:
+    - `mock` mode keeps using local placeholder generation.
+    - `real` mode sends `generationMode: "real"` to the server.
+    - Server checks provider configuration and returns a clear setup error if the required API key is missing.

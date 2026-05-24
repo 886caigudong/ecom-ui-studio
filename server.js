@@ -165,6 +165,42 @@ function getProviderStatus() {
   };
 }
 
+function getProviderConfig(model) {
+  const providerMap = {
+    "gemini-2.5-flash-image": { envKey: "GOOGLE_API_KEY", baseUrlKey: "GOOGLE_BASE_URL" },
+    "gemini-3-pro-image-preview": { envKey: "GOOGLE_API_KEY", baseUrlKey: "GOOGLE_BASE_URL" },
+    "gpt-image-2": { envKey: "OPENAI_API_KEY", baseUrlKey: "OPENAI_BASE_URL" },
+    "seedream-4": { envKey: "SEEDREAM_API_KEY", baseUrlKey: "SEEDREAM_BASE_URL" }
+  };
+  const provider = providerMap[model] || providerMap["gemini-2.5-flash-image"];
+
+  return {
+    ...provider,
+    configured: Boolean(process.env[provider.envKey]),
+    baseUrl: process.env[provider.baseUrlKey] || ""
+  };
+}
+
+function createRealModePlaceholder(input) {
+  const config = getProviderConfig(input.model);
+
+  if (!config.configured) {
+    const error = new Error(`真实 API 模式需要先在服务端配置 ${config.envKey}`);
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const job = createMockImageJob(input);
+  job.status = "queued-real-api";
+  job.realApi = {
+    providerConfigured: true,
+    envKey: config.envKey,
+    baseUrlConfigured: Boolean(config.baseUrl),
+    note: "真实 Provider 已配置。当前 MVP 仍返回占位结果，下一步可替换为真实图像生成调用。"
+  };
+  return job;
+}
+
 http.createServer((req, res) => {
   if (req.method === "GET" && req.url.split("?")[0] === "/api/providers/status") {
     sendJson(res, 200, getProviderStatus());
@@ -173,8 +209,11 @@ http.createServer((req, res) => {
 
   if (req.method === "POST" && req.url.split("?")[0] === "/api/images/generate") {
     readJson(req)
-      .then((input) => sendJson(res, 200, createMockImageJob(input)))
-      .catch((error) => sendJson(res, 400, { error: error.message }));
+      .then((input) => {
+        const job = input.generationMode === "real" ? createRealModePlaceholder(input) : createMockImageJob(input);
+        sendJson(res, 200, job);
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
     return;
   }
 

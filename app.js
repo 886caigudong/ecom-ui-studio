@@ -148,7 +148,8 @@ function collectInput() {
     clientBriefType: clientBrief?.type || "",
     clientBriefSize: clientBrief?.size || 0,
     clientBriefDataUrl: clientBrief?.kind === "image" ? clientBrief?.dataUrl || "" : "",
-    model: fields.modelSelect.value
+    model: fields.modelSelect.value,
+    generationMode: getGenerationMode()
   };
 }
 
@@ -158,6 +159,10 @@ function clamp(value, min, max) {
 
 function getSelectedDetailModules() {
   return Array.from(document.querySelectorAll(".detail-module:checked")).map((item) => item.value);
+}
+
+function getGenerationMode() {
+  return document.querySelector('input[name="generationMode"]:checked')?.value || "mock";
 }
 
 function splitBadges(value) {
@@ -432,7 +437,8 @@ async function submitImageJob() {
         referenceAsset,
         brandLogoAsset,
         paletteAsset,
-        clientBrief
+        clientBrief,
+        generationMode: data.generationMode
       })
     });
 
@@ -1388,6 +1394,13 @@ document.querySelectorAll(".nav-item").forEach((button) => {
 fields.modelSelect.addEventListener("change", () => {
   document.querySelector("#modelHint").textContent = modelHints[fields.modelSelect.value];
   generatePlan();
+});
+
+document.querySelectorAll('input[name="generationMode"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    const mode = getGenerationMode();
+    statusText.textContent = mode === "real" ? "已切换到真实 API 模式，请确认模型已配置" : "已切换到模拟生成模式";
+  });
 });
 
 fields.referenceImage.addEventListener("change", handleReferenceUpload);
