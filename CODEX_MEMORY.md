@@ -67,6 +67,10 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
   - Visual preview SVG.
   - High-resolution PNG download.
   - Downloaded PNGs render at 2x resolution; detail images export as full-height high-resolution PNGs.
+  - Gallery cards show delivery specs before download:
+    - Export resolution.
+    - Aspect ratio.
+    - Platform fit status.
   - Brief text download.
 - Post-generation self-check:
   - Typo check.
@@ -290,6 +294,10 @@ Continuation:
     - 3:4 images export at `1800x2400`.
     - Detail images export at `1500x3600`.
     - Verified browser download click and status output.
+  - Added pre-download delivery guidance:
+    - Gallery cards display `交付规格`, export pixels, aspect ratio, and platform fit.
+    - If a user downloads a size that does not fit the target platform, the app asks for confirmation first.
+    - Verified gallery rendering shows `2000x2000 · 1:1 · 平台适配`.
   - Upgraded UI color system using the user's reference color card:
     - Deep black page background.
     - Gucci green `#1F4433` as primary brand color.

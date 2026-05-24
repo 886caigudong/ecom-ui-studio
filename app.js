@@ -530,6 +530,7 @@ function renderGallery(job) {
         <h3>${image.title}</h3>
         <p>${image.description}</p>
         <span>${job.model} · ${job.platform}</span>
+        ${renderDeliverySpec(job, image)}
         <div class="gallery-actions">
           <button class="download-btn" data-download="${image.id}">下载说明</button>
           <button class="download-btn" data-download-png="${image.id}">下载高清 PNG</button>
@@ -554,6 +555,19 @@ function renderGallery(job) {
   galleryGrid.querySelectorAll("[data-tune-image]").forEach((button) => {
     button.addEventListener("click", () => tuneSingleImage(job, button.dataset.tuneImage));
   });
+}
+
+function renderDeliverySpec(job, image) {
+  const dimensions = getImageDimensions(image.ratio, true);
+  const fit = isPlatformSizeFit(job.platform, image.ratio);
+  const status = fit ? "平台适配" : `建议 ${recommendedSize(job.platform)}`;
+
+  return `
+    <div class="delivery-spec ${fit ? "pass" : "warn"}">
+      <strong>交付规格</strong>
+      <span>${dimensions.w}x${dimensions.h} · ${image.ratio} · ${status}</span>
+    </div>
+  `;
 }
 
 function runSelfCheck(job, input) {
@@ -912,6 +926,14 @@ function downloadImageBrief(job, imageId) {
 async function downloadPreviewPng(job, imageId) {
   const image = job.images.find((item) => item.id === imageId);
   if (!image) return;
+
+  if (!isPlatformSizeFit(job.platform, image.ratio)) {
+    const confirmed = window.confirm(`当前尺寸 ${image.ratio} 可能不适合 ${job.platform}，建议使用 ${recommendedSize(job.platform)}。仍然下载吗？`);
+    if (!confirmed) {
+      statusText.textContent = "已取消下载，可先调整尺寸后重新生成";
+      return;
+    }
+  }
 
   statusText.textContent = "正在生成高清 PNG";
   const dataUrl = createPreviewSvg(job, image, { highResolution: true });
