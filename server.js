@@ -6,10 +6,21 @@ const root = __dirname;
 const port = 5173;
 const dataDir = path.join(root, "data");
 const jobsFile = path.join(dataDir, "jobs.json");
+const assetsDir = path.join(dataDir, "assets");
+const assetsIndexFile = path.join(assetsDir, "index.json");
 const types = {
   ".html": "text/html;charset=utf-8",
   ".css": "text/css;charset=utf-8",
-  ".js": "text/javascript;charset=utf-8"
+  ".js": "text/javascript;charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".pdf": "application/pdf",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".txt": "text/plain;charset=utf-8",
+  ".md": "text/markdown;charset=utf-8",
+  ".json": "application/json;charset=utf-8",
+  ".csv": "text/csv;charset=utf-8"
 };
 
 function readJson(req) {
@@ -17,7 +28,7 @@ function readJson(req) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 1024 * 1024) {
+      if (body.length > 12 * 1024 * 1024) {
         req.destroy();
         reject(new Error("Payload too large"));
       }
@@ -42,7 +53,9 @@ function sendJson(res, status, payload) {
 
 function ensureDataStore() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
   if (!fs.existsSync(jobsFile)) fs.writeFileSync(jobsFile, "[]", "utf8");
+  if (!fs.existsSync(assetsIndexFile)) fs.writeFileSync(assetsIndexFile, "[]", "utf8");
 }
 
 function readJobs() {
@@ -85,6 +98,62 @@ function saveJobRecord(input) {
   const record = sanitizeStoredJob(input);
   const existing = readJobs().filter((item) => item.id !== record.id);
   writeJobs([record, ...existing]);
+  return record;
+}
+
+function readAssets() {
+  ensureDataStore();
+  try {
+    const assets = JSON.parse(fs.readFileSync(assetsIndexFile, "utf8"));
+    return Array.isArray(assets) ? assets : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAssets(assets) {
+  ensureDataStore();
+  fs.writeFileSync(assetsIndexFile, JSON.stringify(assets.slice(0, 300), null, 2), "utf8");
+}
+
+function safeAssetName(name) {
+  const extension = path.extname(name || "").toLowerCase().replace(/[^.\w]/g, "") || ".bin";
+  const stem = path.basename(name || "asset", extension).replace(/[^\w.-]+/g, "-").slice(0, 48) || "asset";
+  return { stem, extension };
+}
+
+function saveAssetRecord(input) {
+  const contentBase64 = String(input.contentBase64 || "");
+  if (!contentBase64) {
+    const error = new Error("Missing asset content");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const buffer = Buffer.from(contentBase64, "base64");
+  if (!buffer.length || buffer.length > 8 * 1024 * 1024) {
+    const error = new Error("Asset must be between 1 byte and 8 MB");
+    error.statusCode = 413;
+    throw error;
+  }
+
+  const { stem, extension } = safeAssetName(input.name);
+  const id = `asset_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const filename = `${id}_${stem}${extension}`;
+  const filePath = path.join(assetsDir, filename);
+  fs.writeFileSync(filePath, buffer);
+
+  const record = {
+    id,
+    name: input.name || filename,
+    filename,
+    kind: input.kind || "asset",
+    type: input.type || types[extension] || "application/octet-stream",
+    size: buffer.length,
+    url: `/assets/${filename}`,
+    createdAt: new Date().toISOString()
+  };
+  writeAssets([record, ...readAssets()]);
   return record;
 }
 
@@ -345,6 +414,40 @@ const server = http.createServer((req, res) => {
   if (req.method === "DELETE" && req.url.split("?")[0] === "/api/jobs") {
     writeJobs([]);
     sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "GET" && req.url.split("?")[0] === "/api/assets") {
+    sendJson(res, 200, { assets: readAssets().slice(0, 100) });
+    return;
+  }
+
+  if (req.method === "POST" && req.url.split("?")[0] === "/api/assets") {
+    readJson(req)
+      .then((input) => sendJson(res, 200, saveAssetRecord(input)))
+      .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
+    return;
+  }
+
+  if (req.method === "GET" && req.url.startsWith("/assets/")) {
+    const filename = path.basename(decodeURIComponent(req.url.split("?")[0]));
+    const file = path.join(assetsDir, filename);
+    if (!file.startsWith(assetsDir)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
+    fs.readFile(file, (error, data) => {
+      if (error) {
+        res.writeHead(404);
+        res.end("Not found");
+        return;
+      }
+      res.writeHead(200, {
+        "Content-Type": types[path.extname(file).toLowerCase()] || "application/octet-stream"
+      });
+      res.end(data);
+    });
     return;
   }
 

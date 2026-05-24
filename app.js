@@ -1034,6 +1034,7 @@ function handleReferenceUpload(event) {
       dataUrl: reader.result
     };
     renderReferencePreview(referenceAsset);
+    syncAssetStorage(file, "reference-image", referenceAsset);
     updatePreview();
     generatePlan();
   };
@@ -1050,7 +1051,7 @@ function renderReferencePreview(asset) {
   }
 
   referencePreview.classList.remove("empty");
-  referencePreview.innerHTML = `<img src="${asset.dataUrl}" alt="${asset.name}">`;
+  referencePreview.innerHTML = `<img src="${asset.dataUrl}" alt="${asset.name}">${asset.assetId ? `<span class="asset-stored">已入库 · ${asset.assetId}</span>` : ""}`;
   referenceOverlay.src = asset.dataUrl;
   referenceOverlay.classList.add("has-image");
 }
@@ -1079,6 +1080,7 @@ function handleLogoUpload(event) {
       dataUrl: reader.result
     };
     renderLogoPreview(brandLogoAsset);
+    syncAssetStorage(file, "brand-logo", brandLogoAsset);
     generatePlan();
   };
   reader.readAsDataURL(file);
@@ -1092,7 +1094,7 @@ function renderLogoPreview(asset) {
   }
 
   logoPreview.classList.remove("empty");
-  logoPreview.innerHTML = `<img src="${asset.dataUrl}" alt="${asset.name}">`;
+  logoPreview.innerHTML = `<img src="${asset.dataUrl}" alt="${asset.name}">${asset.assetId ? `<span class="asset-stored">已入库 · ${asset.assetId}</span>` : ""}`;
 }
 
 function handlePaletteUpload(event) {
@@ -1122,6 +1124,7 @@ function handlePaletteUpload(event) {
       };
       fields.brandColor.value = color;
       renderPalettePreview(paletteAsset);
+      syncAssetStorage(file, "palette-reference", paletteAsset, () => renderPalettePreview(paletteAsset));
       generatePlan();
       statusText.textContent = "已提取主色调并同步到品牌主色";
     }).catch(() => {
@@ -1191,6 +1194,7 @@ function renderPalettePreview(asset) {
     <div class="palette-meta">
       <strong>${asset.name}</strong>
       <span>提取主色：${asset.color}</span>
+      ${asset.assetId ? `<span class="asset-stored">已入库 · ${asset.assetId}</span>` : ""}
       <div class="palette-chip" style="--chip:${asset.color}"></div>
     </div>
   `;
@@ -1235,6 +1239,7 @@ function handleBriefUpload(event) {
         dataUrl: reader.result
       };
       renderBriefPreview(clientBrief);
+      syncAssetStorage(file, "client-brief-image", clientBrief, () => renderBriefPreview(clientBrief));
       generatePlan();
       statusText.textContent = "客户图片要求已读取并写入提示词";
     };
@@ -1258,6 +1263,7 @@ function handleBriefUpload(event) {
       text
     };
     renderBriefPreview(clientBrief);
+    syncAssetStorage(file, "client-brief-text", clientBrief);
     generatePlan();
     statusText.textContent = "客户要求已读取并写入提示词";
   };
@@ -1295,6 +1301,7 @@ function parseDeferredBrief(file, extension) {
       checklist: result.checklist || []
     };
     renderBriefPreview(clientBrief);
+    syncAssetStorage(file, `client-brief-${extension}`, clientBrief);
     generatePlan();
     statusText.textContent = `${extension.toUpperCase()} 要求文档已解析并写入提示词`;
   }).catch((error) => {
@@ -1306,6 +1313,7 @@ function parseDeferredBrief(file, extension) {
       text: `客户上传了 ${extension.toUpperCase()} 要求文档：${file.name}。解析失败：${error.message}。请人工补充关键要求。`
     };
     renderBriefPreview(clientBrief);
+    syncAssetStorage(file, `client-brief-${extension}`, clientBrief);
     generatePlan();
     statusText.textContent = "文档解析失败，已保留文件状态";
   });
@@ -1321,6 +1329,45 @@ function fileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+async function storeAsset(file, kind) {
+  const contentBase64 = await fileToBase64(file);
+  const response = await fetch("/api/assets", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      kind,
+      contentBase64
+    })
+  });
+  if (!response.ok) throw new Error(`素材存储接口返回 ${response.status}`);
+  return response.json();
+}
+
+function attachStoredAsset(asset, stored) {
+  if (!asset || !stored) return asset;
+  asset.assetId = stored.id;
+  asset.assetUrl = stored.url;
+  asset.storedAt = stored.createdAt;
+  return asset;
+}
+
+function syncAssetStorage(file, kind, asset, onStored) {
+  storeAsset(file, kind)
+    .then((stored) => {
+      attachStoredAsset(asset, stored);
+      if (onStored) onStored(stored);
+      statusText.textContent = `${file.name} 已保存到本地素材库`;
+    })
+    .catch((error) => {
+      statusText.textContent = `${file.name} 本地素材保存失败：${error.message}`;
+    });
 }
 
 function normalizeBriefText(text) {

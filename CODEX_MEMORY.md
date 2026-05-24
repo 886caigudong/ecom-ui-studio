@@ -31,6 +31,11 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
   - Brand Logo PNG upload.
   - Main color reference image upload with automatic dominant color extraction.
 - Product reference image upload.
+- Uploaded assets are mirrored to the local backend asset store:
+  - `POST /api/assets`
+  - `GET /api/assets`
+  - Static access via `/assets/{filename}`
+  - Files are stored under ignored `data/assets/`.
 - Customer requirements document upload:
   - Text formats: txt, md, json, csv are read directly.
   - Image formats: png, jpg, jpeg are previewed and used as visual brief references.
@@ -255,9 +260,15 @@ Current continuation intent:
 
 Continuation:
 
-- Added backend task persistence:
-  - New local JSON data store at `data/jobs.json`.
-  - Added `data/` to `.gitignore` so user/customer task data is not pushed.
-  - Added `GET /api/jobs`, `POST /api/jobs`, and `DELETE /api/jobs`.
-  - Frontend now syncs generated jobs to the server while preserving localStorage fallback.
-  - Verified API save/list/clear flow and browser history loading.
+  - Added backend task persistence:
+    - New local JSON data store at `data/jobs.json`.
+    - Added `data/` to `.gitignore` so user/customer task data is not pushed.
+    - Added `GET /api/jobs`, `POST /api/jobs`, and `DELETE /api/jobs`.
+    - Frontend now syncs generated jobs to the server while preserving localStorage fallback.
+    - Verified API save/list/clear flow and browser history loading.
+  - Added backend asset storage:
+    - New local asset store at `data/assets/`.
+    - Added `POST /api/assets` and `GET /api/assets`.
+    - Added static local asset serving through `/assets/{filename}`.
+    - Product reference images, brand logos, palette references, and customer brief files now sync to the backend while preserving browser previews.
+    - Verified asset save/list/static-read flow and browser startup.
