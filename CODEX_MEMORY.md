@@ -94,6 +94,7 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
     - Downloads all high-resolution PNG outputs.
     - Downloads the TXT delivery plan.
     - Downloads the JSON task payload.
+    - Downloads a machine-readable delivery manifest JSON.
 - Cost and usage planning:
   - `POST /api/usage/estimate` estimates credits and approximate API cost by model, size, count, mode, and reference assets.
   - The workspace shows a live cost panel.
@@ -316,3 +317,10 @@ Continuation:
     - Reads backend assets from `GET /api/assets`.
     - Displays uploaded images/files with type, size, local URL, and created time.
     - Verified browser navigation to `assetsView`.
+
+Latest continuation:
+
+- Added delivery manifest:
+  - Batch delivery now also downloads `½»¸¶Çåµ¥-manifest.json`.
+  - Manifest records image filenames, export dimensions, aspect ratios, platform fit, recommended sizes, tuning instructions, usage estimate, self-check, and compliance checks.
+  - Verified syntax and gallery UI entry.

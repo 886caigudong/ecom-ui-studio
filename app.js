@@ -1080,10 +1080,63 @@ async function exportDeliveryPackage() {
     exportCurrentPlanTxt();
     await wait(180);
     exportCurrentPlanJson();
+    await wait(180);
+    exportDeliveryManifest(downloaded);
     statusText.textContent = `交付包已触发下载：${downloaded.length} 张高清 PNG + 方案 TXT + JSON`;
   } catch (error) {
     statusText.textContent = `批量下载失败：${error.message}`;
   }
+}
+
+function buildDeliveryManifest(downloaded = []) {
+  const input = collectInput();
+  const imageFiles = currentJob.images.map((image) => {
+    const dimensions = getImageDimensions(image.ratio, true);
+    const downloadedFile = downloaded.find((item) => item.filename.includes(image.id));
+
+    return {
+      id: image.id,
+      title: image.title,
+      filename: downloadedFile?.filename || `${currentJob.productName}-${image.id}-高清-${dimensions.w}x${dimensions.h}.png`,
+      ratio: image.ratio,
+      width: dimensions.w,
+      height: dimensions.h,
+      platformFit: isPlatformSizeFit(currentJob.platform, image.ratio),
+      recommendedSize: recommendedSize(currentJob.platform),
+      tuneInstruction: image.tuneInstruction || "",
+      description: image.description
+    };
+  });
+
+  return {
+    manifestVersion: 1,
+    exportedAt: new Date().toISOString(),
+    jobId: currentJob.id,
+    productName: currentJob.productName,
+    platform: currentJob.platform,
+    model: currentJob.model,
+    generationMode: input.generationMode,
+    usageEstimate: currentJob.usageEstimate || currentUsageEstimate,
+    files: {
+      images: imageFiles,
+      planTxt: `${currentJob.productName}-方案交付.txt`,
+      taskJson: `${currentJob.productName}-生成任务.json`
+    },
+    checks: {
+      selfCheck: currentJob.selfCheck || runSelfCheck(currentJob, input),
+      compliance: auditPlatformCompliance(input)
+    }
+  };
+}
+
+function exportDeliveryManifest(downloaded = []) {
+  if (!currentJob) {
+    statusText.textContent = "请先提交生成任务再导出交付清单";
+    return;
+  }
+
+  const manifest = buildDeliveryManifest(downloaded);
+  downloadTextFile(`${currentJob.productName}-交付清单-manifest.json`, JSON.stringify(manifest, null, 2), "application/json;charset=utf-8");
 }
 
 function wait(ms) {
