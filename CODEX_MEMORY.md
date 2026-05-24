@@ -335,3 +335,15 @@ Latest continuation - ZIP delivery package:
 - Verified `app.js` and `server.js` syntax with `node --check`.
 - Verified the ZIP structure locally by generating a test package and extracting it with Windows `Expand-Archive`.
 - Confirmed the local app loads at `http://127.0.0.1:5173/` without browser console errors.
+
+Latest continuation - readable document parsing:
+
+- Upgraded `/api/documents/parse` from a placeholder into a dependency-free readable parser.
+- TXT, MD, JSON, and CSV uploads are decoded on the server and normalized.
+- DOCX uploads now extract readable text from `word/*.xml` entries inside the Office ZIP package.
+- PDF uploads now attempt basic text extraction from literal text operators and Flate-compressed streams.
+- Parsed customer brief text is returned to the frontend and injected into prompt generation.
+- Added checklist hints based on brief content such as logo/brand, color palette, negative requirements, Douyin, and Xiaohongshu.
+- Updated frontend help text so PDF/DOCX are described as auto-parsed instead of only queued.
+- Verified syntax with `node --check app.js` and `node --check server.js`.
+- Verified `/api/documents/parse` with TXT and generated DOCX HTTP tests; DOCX Chinese text extraction works.

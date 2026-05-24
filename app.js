@@ -1731,7 +1731,7 @@ function normalizeBriefText(text) {
 function renderBriefPreview(brief) {
   if (!brief) {
     briefPreview.classList.add("empty");
-    briefPreview.innerHTML = "<span>支持 txt / md / json / csv / png / jpg / pdf / docx。文本会自动读取，图片可预览，PDF/DOCX 会进入解析队列。</span>";
+    briefPreview.innerHTML = "<span>支持 txt / md / json / csv / png / jpg / pdf / docx。文本会自动读取，图片可预览，PDF/DOCX 会自动解析正文。</span>";
     return;
   }
 

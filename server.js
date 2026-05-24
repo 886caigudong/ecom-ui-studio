@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
 const root = __dirname;
 const port = 5173;
@@ -176,6 +177,212 @@ function deleteAssetRecord(assetId) {
 
   writeAssets(assets.filter((asset) => asset.id !== assetId));
   return { ok: true, id: assetId };
+}
+
+function decodeBase64File(input) {
+  const contentBase64 = String(input.contentBase64 || "");
+  if (!contentBase64) {
+    const error = new Error("Missing document content");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const buffer = Buffer.from(contentBase64, "base64");
+  if (!buffer.length || buffer.length > 10 * 1024 * 1024) {
+    const error = new Error("Document must be between 1 byte and 10 MB");
+    error.statusCode = 413;
+    throw error;
+  }
+  return buffer;
+}
+
+function normalizeExtractedText(text) {
+  return String(text || "")
+    .replace(/\r/g, "\n")
+    .replace(/\u0000/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 6000);
+}
+
+function decodeTextBuffer(buffer) {
+  const hasUtf16LeBom = buffer[0] === 0xff && buffer[1] === 0xfe;
+  const hasUtf16BeBom = buffer[0] === 0xfe && buffer[1] === 0xff;
+  if (hasUtf16LeBom) return buffer.subarray(2).toString("utf16le");
+  if (hasUtf16BeBom) {
+    const swapped = Buffer.alloc(buffer.length - 2);
+    for (let index = 2; index < buffer.length; index += 2) {
+      swapped[index - 2] = buffer[index + 1] || 0;
+      swapped[index - 1] = buffer[index];
+    }
+    return swapped.toString("utf16le");
+  }
+  return buffer.toString("utf8");
+}
+
+function decodeXmlEntities(text) {
+  return String(text || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'");
+}
+
+function extractDocxEntries(buffer) {
+  const entries = [];
+  let offset = 0;
+
+  while (offset < buffer.length - 30) {
+    const signature = buffer.readUInt32LE(offset);
+    if (signature !== 0x04034b50) {
+      offset += 1;
+      continue;
+    }
+
+    const compression = buffer.readUInt16LE(offset + 8);
+    const compressedSize = buffer.readUInt32LE(offset + 18);
+    const fileNameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + fileNameLength + extraLength;
+    const dataEnd = dataStart + compressedSize;
+    const name = buffer.subarray(nameStart, nameStart + fileNameLength).toString("utf8");
+
+    if (dataEnd > buffer.length || compressedSize < 0) break;
+    const compressed = buffer.subarray(dataStart, dataEnd);
+    let data = Buffer.alloc(0);
+    try {
+      data = compression === 8 ? zlib.inflateRawSync(compressed) : compressed;
+    } catch {
+      data = Buffer.alloc(0);
+    }
+    entries.push({ name, data });
+    offset = dataEnd;
+  }
+
+  return entries;
+}
+
+function extractDocxText(buffer) {
+  const entries = extractDocxEntries(buffer);
+  const xmlFiles = entries.filter((entry) => /^word\/(document|header|footer|footnotes|endnotes).*\.xml$/i.test(entry.name));
+  const text = xmlFiles.map((entry) => {
+    return decodeXmlEntities(entry.data.toString("utf8")
+      .replace(/<w:tab\/>/g, "\t")
+      .replace(/<\/w:p>/g, "\n")
+      .replace(/<[^>]+>/g, ""));
+  }).join("\n");
+
+  return normalizeExtractedText(text);
+}
+
+function decodePdfLiteral(value) {
+  return String(value || "")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\\(/g, "(")
+    .replace(/\\\)/g, ")")
+    .replace(/\\\\/g, "\\");
+}
+
+function extractPdfTextFromString(source) {
+  const chunks = [];
+  const literalPattern = /\((?:\\.|[^\\)])*\)\s*Tj/g;
+  const arrayPattern = /\[(.*?)\]\s*TJ/gs;
+  let match;
+
+  while ((match = literalPattern.exec(source))) {
+    chunks.push(decodePdfLiteral(match[0].replace(/\)\s*Tj$/, "").slice(1)));
+  }
+  while ((match = arrayPattern.exec(source))) {
+    const inner = match[1];
+    const literals = inner.match(/\((?:\\.|[^\\)])*\)/g) || [];
+    chunks.push(literals.map((item) => decodePdfLiteral(item.slice(1, -1))).join(""));
+  }
+
+  return chunks.join("\n");
+}
+
+function extractPdfText(buffer) {
+  const raw = buffer.toString("latin1");
+  const chunks = [extractPdfTextFromString(raw)];
+  const streamPattern = /<<(?:.|\n|\r)*?\/FlateDecode(?:.|\n|\r)*?>>\s*stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  let match;
+
+  while ((match = streamPattern.exec(raw))) {
+    try {
+      const streamBuffer = Buffer.from(match[1], "latin1");
+      const inflated = zlib.inflateSync(streamBuffer).toString("latin1");
+      chunks.push(extractPdfTextFromString(inflated));
+    } catch {
+      // Some PDFs use filters or encodings outside this dependency-free parser.
+    }
+  }
+
+  return normalizeExtractedText(chunks.join("\n"));
+}
+
+function buildDocumentChecklist(extractedText) {
+  const lower = extractedText.toLowerCase();
+  const checklist = [
+    "Confirm main image composition follows the customer brief.",
+    "Confirm detail page module order follows the customer brief.",
+    "Confirm brand logo, main color, and reference images are included when required.",
+    "Confirm platform rules and prohibited terms do not conflict with the brief."
+  ];
+
+  if (/logo|标志|品牌|brand/i.test(extractedText)) checklist.push("Customer brief mentions brand/logo requirements.");
+  if (/颜色|色调|配色|color|palette/i.test(extractedText)) checklist.push("Customer brief mentions color or palette requirements.");
+  if (/禁用|不要|避免|forbid|avoid|禁止/i.test(extractedText)) checklist.push("Customer brief includes negative requirements.");
+  if (lower.includes("douyin") || extractedText.includes("抖音")) checklist.push("Customer brief references Douyin commerce constraints.");
+  if (lower.includes("xiaohongshu") || extractedText.includes("小红书")) checklist.push("Customer brief references Xiaohongshu commerce constraints.");
+
+  return checklist;
+}
+
+function createReadableDocumentParseJob(input) {
+  const extension = String(input.kind || input.name?.split(".").pop() || "document").toLowerCase();
+  const name = input.name || `brief.${extension}`;
+  const buffer = decodeBase64File(input);
+  const sizeKb = Math.ceil(buffer.length / 1024);
+  let extractedText = "";
+  let parser = "binary-safe-text";
+
+  if (["txt", "md", "json", "csv"].includes(extension)) {
+    parser = "plain-text";
+    extractedText = normalizeExtractedText(decodeTextBuffer(buffer));
+  } else if (extension === "docx") {
+    parser = "docx-xml";
+    extractedText = extractDocxText(buffer);
+  } else if (extension === "pdf") {
+    parser = "pdf-basic";
+    extractedText = extractPdfText(buffer);
+  } else {
+    extractedText = normalizeExtractedText(decodeTextBuffer(buffer));
+  }
+
+  if (!extractedText) {
+    extractedText = [
+      `Customer uploaded ${extension.toUpperCase()} requirement document: ${name}.`,
+      "The dependency-free parser could not extract readable body text from this file.",
+      "Please ask the customer to upload a text-based PDF/DOCX or paste key requirements into the form."
+    ].join("\n");
+  }
+
+  return {
+    id: `doc_${Date.now()}`,
+    status: "parsed",
+    name,
+    kind: extension,
+    size: buffer.length,
+    parser,
+    summary: `${name} parsed with ${parser}. File type: ${extension.toUpperCase()}, size: about ${sizeKb} KB, extracted ${extractedText.length} characters.`,
+    extractedText,
+    checklist: buildDocumentChecklist(extractedText)
+  };
 }
 
 function createMockImageJob(input) {
@@ -509,7 +716,7 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "POST" && req.url.split("?")[0] === "/api/documents/parse") {
     readJson(req)
-      .then((input) => sendJson(res, 200, createDocumentParseJob(input)))
+      .then((input) => sendJson(res, 200, createReadableDocumentParseJob(input)))
       .catch((error) => sendJson(res, 400, { error: error.message }));
     return;
   }
