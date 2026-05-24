@@ -65,6 +65,8 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
 - Single-image tuning:
   - Each generated image has its own tuning input.
   - Tuning one image does not regenerate all images.
+  - Frontend tuning now calls server endpoint `POST /api/images/tune`.
+  - The server returns a new version for only the selected image and leaves the rest of the gallery unchanged.
 - Task history:
   - Stored in browser localStorage.
   - Supports preview, refill, and clearing history.
@@ -233,3 +235,8 @@ Current continuation intent:
     - `mock` mode keeps using local placeholder generation.
     - `real` mode sends `generationMode: "real"` to the server.
     - Server checks provider configuration and returns a clear setup error if the required API key is missing.
+  - Added server-side single-image tuning endpoint:
+    - `POST /api/images/tune`
+    - Frontend sends the selected image, tuning instruction, generation mode, and prompt context.
+    - Server returns a versioned image result for that one image only.
+    - Verified local API request and local page access at `http://127.0.0.1:5173/`.

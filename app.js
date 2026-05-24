@@ -549,7 +549,7 @@ function renderSelfCheck(result) {
   `;
 }
 
-function tuneSingleImage(job, imageId) {
+async function tuneSingleImage(job, imageId) {
   const input = galleryGrid.querySelector(`[data-tune-input="${imageId}"]`);
   const instruction = input?.value.trim();
   if (!instruction) {
@@ -560,26 +560,33 @@ function tuneSingleImage(job, imageId) {
   const image = job.images.find((item) => item.id === imageId);
   if (!image) return;
 
-  const version = (image.version || 1) + 1;
-  image.version = version;
-  image.tuneInstruction = instruction;
-  image.title = `${image.title.replace(/ · v\d+$/, "")} · v${version}`;
-  image.description = `${image.description} 微调：${instruction}`;
-  image.swatch = shiftHexColor(image.swatch, version * 10);
-  job.selfCheck = runSelfCheck(job, collectInput());
-  renderGallery(job);
-  currentJob = job;
-  statusText.textContent = `已只微调 ${image.title}`;
-}
+  statusText.textContent = "正在微调指定图片";
 
-function shiftHexColor(hex, amount) {
-  const clean = String(hex || "#1f6f5b").replace("#", "");
-  const number = Number.parseInt(clean, 16);
-  if (Number.isNaN(number)) return "#1f6f5b";
-  const r = clamp(((number >> 16) & 255) + amount, 0, 255);
-  const g = clamp(((number >> 8) & 255) + amount, 0, 255);
-  const b = clamp((number & 255) + amount, 0, 255);
-  return rgbToHex(r, g, b);
+  try {
+    const response = await fetch("/api/images/tune", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        jobId: job.id,
+        image,
+        instruction,
+        generationMode: collectInput().generationMode,
+        prompt: job.prompt
+      })
+    });
+
+    if (!response.ok) throw new Error(`微调接口返回 ${response.status}`);
+    const tunedImage = await response.json();
+    job.images = job.images.map((item) => item.id === imageId ? tunedImage : item);
+    job.selfCheck = runSelfCheck(job, collectInput());
+    renderGallery(job);
+    currentJob = job;
+    statusText.textContent = `已只微调 ${tunedImage.title}`;
+  } catch (error) {
+    statusText.textContent = `微调失败：${error.message}`;
+  }
 }
 
 function createPreviewSvg(job, image) {

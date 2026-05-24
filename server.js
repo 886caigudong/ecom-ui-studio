@@ -201,7 +201,34 @@ function createRealModePlaceholder(input) {
   return job;
 }
 
-http.createServer((req, res) => {
+function createTuneImageResult(input) {
+  const image = input.image || {};
+  const instruction = input.instruction || "";
+  const version = Number(image.version || 1) + 1;
+
+  return {
+    ...image,
+    version,
+    tuneInstruction: instruction,
+    title: `${String(image.title || "图片方案").replace(/ · v\d+$/, "")} · v${version}`,
+    description: `${image.description || ""} 微调：${instruction}`,
+    swatch: shiftHexColor(image.swatch || "#1f6f5b", version * 10),
+    tunedAt: new Date().toISOString(),
+    tuneMode: input.generationMode || "mock"
+  };
+}
+
+function shiftHexColor(hex, amount) {
+  const clean = String(hex || "#1f6f5b").replace("#", "");
+  const number = Number.parseInt(clean, 16);
+  if (Number.isNaN(number)) return "#1f6f5b";
+  const r = Math.min(Math.max(((number >> 16) & 255) + amount, 0), 255);
+  const g = Math.min(Math.max(((number >> 8) & 255) + amount, 0), 255);
+  const b = Math.min(Math.max((number & 255) + amount, 0), 255);
+  return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
+const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url.split("?")[0] === "/api/providers/status") {
     sendJson(res, 200, getProviderStatus());
     return;
@@ -213,6 +240,13 @@ http.createServer((req, res) => {
         const job = input.generationMode === "real" ? createRealModePlaceholder(input) : createMockImageJob(input);
         sendJson(res, 200, job);
       })
+      .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
+    return;
+  }
+
+  if (req.method === "POST" && req.url.split("?")[0] === "/api/images/tune") {
+    readJson(req)
+      .then((input) => sendJson(res, 200, createTuneImageResult(input)))
       .catch((error) => sendJson(res, error.statusCode || 400, { error: error.message }));
     return;
   }
@@ -246,6 +280,10 @@ http.createServer((req, res) => {
     });
     res.end(data);
   });
-}).listen(port, "127.0.0.1", () => {
+});
+
+server.listen(port, "127.0.0.1", () => {
   console.log(`http://127.0.0.1:${port}`);
 });
+
+module.exports = server;
