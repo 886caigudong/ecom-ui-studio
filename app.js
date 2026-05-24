@@ -532,7 +532,7 @@ function renderGallery(job) {
         <span>${job.model} · ${job.platform}</span>
         <div class="gallery-actions">
           <button class="download-btn" data-download="${image.id}">下载说明</button>
-          <button class="download-btn" data-download-png="${image.id}">下载 PNG</button>
+          <button class="download-btn" data-download-png="${image.id}">下载高清 PNG</button>
         </div>
         <div class="tune-box">
           <input data-tune-input="${image.id}" placeholder="只微调这张图，例如：背景更亮、Logo放右上角">
@@ -650,13 +650,13 @@ async function tuneSingleImage(job, imageId) {
   }
 }
 
-function createPreviewSvg(job, image) {
+function createPreviewSvg(job, image, options = {}) {
   const title = escapeXml(job.productName);
   const platform = escapeXml(job.platform);
   const brand = escapeXml(job.brand?.name || "Brand");
   const tone = escapeXml(job.brand?.tone || "专业可信");
   const color = image.swatch || "#1f6f5b";
-  const ratio = image.ratio === "750:1800" ? { w: 750, h: 1200 } : image.ratio === "4:5" ? { w: 900, h: 1125 } : image.ratio === "3:4" ? { w: 900, h: 1200 } : { w: 1000, h: 1000 };
+  const ratio = getImageDimensions(image.ratio, Boolean(options.highResolution));
   const fontSize = ratio.w > ratio.h ? 54 : 48;
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${ratio.w}" height="${ratio.h}" viewBox="0 0 ${ratio.w} ${ratio.h}">
@@ -687,6 +687,17 @@ function createPreviewSvg(job, image) {
   `;
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function getImageDimensions(ratio, highResolution = false) {
+  const base = ratio === "750:1800" ? { w: 750, h: highResolution ? 1800 : 1200 } : ratio === "4:5" ? { w: 900, h: 1125 } : ratio === "3:4" ? { w: 900, h: 1200 } : { w: 1000, h: 1000 };
+  const scale = highResolution ? 2 : 1;
+
+  return {
+    w: base.w * scale,
+    h: base.h * scale,
+    scale
+  };
 }
 
 function escapeXml(value) {
@@ -902,17 +913,23 @@ async function downloadPreviewPng(job, imageId) {
   const image = job.images.find((item) => item.id === imageId);
   if (!image) return;
 
-  const dataUrl = createPreviewSvg(job, image);
-  const pngUrl = await svgToPng(dataUrl, image.ratio);
-  const link = document.createElement("a");
-  link.href = pngUrl;
-  link.download = `${job.productName}-${image.id}.png`;
-  link.click();
-  URL.revokeObjectURL(pngUrl);
+  statusText.textContent = "正在生成高清 PNG";
+  const dataUrl = createPreviewSvg(job, image, { highResolution: true });
+  try {
+    const output = await svgToPng(dataUrl, image.ratio);
+    const link = document.createElement("a");
+    link.href = output.url;
+    link.download = `${job.productName}-${image.id}-高清-${output.width}x${output.height}.png`;
+    link.click();
+    URL.revokeObjectURL(output.url);
+    statusText.textContent = `高清 PNG 已生成：${output.width}x${output.height}`;
+  } catch (error) {
+    statusText.textContent = `高清 PNG 生成失败：${error.message}`;
+  }
 }
 
 function svgToPng(svgUrl, ratio) {
-  const size = ratio === "750:1800" ? { w: 750, h: 1200 } : ratio === "4:5" ? { w: 900, h: 1125 } : ratio === "3:4" ? { w: 900, h: 1200 } : { w: 1000, h: 1000 };
+  const size = getImageDimensions(ratio, true);
 
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -921,13 +938,19 @@ function svgToPng(svgUrl, ratio) {
       canvas.width = size.w;
       canvas.height = size.h;
       const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, size.w, size.h);
       canvas.toBlob((blob) => {
         if (!blob) {
           reject(new Error("PNG 生成失败"));
           return;
         }
-        resolve(URL.createObjectURL(blob));
+        resolve({
+          url: URL.createObjectURL(blob),
+          width: size.w,
+          height: size.h
+        });
       }, "image/png");
     };
     image.onerror = reject;

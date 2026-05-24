@@ -65,7 +65,8 @@ GitHub repository: `git@github.com:886caigudong/ecom-ui-studio.git`
   - Returns structured mock image jobs.
 - Gallery results:
   - Visual preview SVG.
-  - PNG download.
+  - High-resolution PNG download.
+  - Downloaded PNGs render at 2x resolution; detail images export as full-height high-resolution PNGs.
   - Brief text download.
 - Post-generation self-check:
   - Typo check.
@@ -281,6 +282,14 @@ Continuation:
     - New endpoint `DELETE /api/assets/{assetId}` removes both the stored file and asset index entry.
     - Asset library cards now include a delete button with browser confirmation.
     - Verified create/delete/list API flow and asset library rendering.
+  - Improved image download clarity:
+    - Gallery download button now says `下载高清 PNG`.
+    - PNG export uses high-resolution SVG rendering before rasterization.
+    - 1:1 images export at `2000x2000`.
+    - 4:5 images export at `1800x2250`.
+    - 3:4 images export at `1800x2400`.
+    - Detail images export at `1500x3600`.
+    - Verified browser download click and status output.
   - Upgraded UI color system using the user's reference color card:
     - Deep black page background.
     - Gucci green `#1F4433` as primary brand color.
